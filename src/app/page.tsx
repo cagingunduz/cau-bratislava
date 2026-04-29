@@ -1,65 +1,93 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import type { Listing } from '@/types'
+import Header from '@/components/Header'
+import Hero from '@/components/Hero'
+import ListingsSection from '@/components/ListingsSection'
+import HowItWorks from '@/components/HowItWorks'
+import CtaBanner from '@/components/CtaBanner'
+import Testimonials from '@/components/Testimonials'
+import Footer from '@/components/Footer'
+import SellModal from '@/components/SellModal'
+import ContactModal from '@/components/ContactModal'
+import Toast from '@/components/Toast'
 
 export default function Home() {
+  const [listings, setListings]       = useState<Listing[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [category, setCategory]       = useState('all')
+  const [maxPrice, setMaxPrice]       = useState('all')
+  const [searchQ, setSearchQ]         = useState('')
+  const [sellOpen, setSellOpen]       = useState(false)
+  const [contactItem, setContactItem] = useState<Listing | null>(null)
+  const [toast, setToast]             = useState<string | null>(null)
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const fetchListings = useCallback(async () => {
+    setLoading(true)
+    try {
+      const p = new URLSearchParams()
+      if (category !== 'all') p.set('category', category)
+      if (maxPrice !== 'all') p.set('maxPrice', maxPrice)
+      if (searchQ)            p.set('q', searchQ)
+      const res  = await fetch(`/api/listings?${p}`)
+      const data = await res.json()
+      setListings(Array.isArray(data) ? data : [])
+    } catch { setListings([]) }
+    finally  { setLoading(false) }
+  }, [category, maxPrice, searchQ])
+
+  useEffect(() => { fetchListings() }, [fetchListings])
+
+  async function handleSell(body: Record<string, unknown>) {
+    const res = await fetch('/api/listings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (res.ok) { setSellOpen(false); showToast('Your listing is live! 🎉'); fetchListings() }
+    else          showToast('Something went wrong. Try again.')
+  }
+
+  async function handleContact(sender: { name: string; email: string; message: string }) {
+    if (!contactItem) return
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_id: contactItem.id, sender_name: sender.name, sender_email: sender.email, message: sender.message }),
+    })
+    if (res.ok) { setContactItem(null); showToast('Message sent! The seller will reply soon.') }
+    else          showToast('Something went wrong. Try again.')
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      <Header onSell={() => setSellOpen(true)} onSearch={setSearchQ} />
+      <main>
+        <Hero onSell={() => setSellOpen(true)} />
+        <ListingsSection
+          listings={listings}
+          loading={loading}
+          category={category}
+          maxPrice={maxPrice}
+          onCategoryChange={setCategory}
+          onMaxPriceChange={setMaxPrice}
+          onContact={setContactItem}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <HowItWorks />
+        <CtaBanner onSell={() => setSellOpen(true)} />
+        <Testimonials />
       </main>
-    </div>
-  );
+      <Footer />
+
+      {sellOpen   && <SellModal    onClose={() => setSellOpen(false)}   onSubmit={handleSell} />}
+      {contactItem && <ContactModal listing={contactItem} onClose={() => setContactItem(null)} onSubmit={handleContact} />}
+      <Toast message={toast} />
+    </>
+  )
 }
