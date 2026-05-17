@@ -1,240 +1,156 @@
 'use client'
-
-import { useState, useEffect, useCallback } from 'react'
-import dynamic from 'next/dynamic'
-import type { Listing } from '@/types'
-import type { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/auth'
 import SiteHeader from '@/components/SiteHeader'
 import Footer from '@/components/Footer'
-import ListingsSection from '@/components/ListingsSection'
-import SellModal from '@/components/SellModal'
-import ContactModal from '@/components/ContactModal'
-import Toast from '@/components/Toast'
-import AuthModal from '@/components/AuthModal'
-import ChatModal from '@/components/ChatModal'
 
-const MapModal = dynamic(() => import('@/components/MapModal'), { ssr: false })
+const SECTIONS = [
+  {
+    href: '/housing',
+    label: 'Housing',
+    headline: 'Verified flats in Bratislava',
+    body: 'Every listing is personally checked by our team. Studios, shared flats, rooms near EUBA and Comenius — all pre-screened so you can move in with confidence.',
+    stat: '12 verified listings',
+    bg: '#c9b490',
+    dark: false,
+  },
+  {
+    href: '/storage',
+    label: 'Storage',
+    headline: 'Safe summer storage',
+    body: "Going home after semester? Leave your boxes, bike and furniture with us. Pick them up when you're back. Simple, secure, all-inclusive pricing.",
+    stat: 'From €0.52 / day',
+    bg: '#1a1a1a',
+    dark: true,
+  },
+  {
+    href: '/marketplace',
+    label: 'Marketplace',
+    headline: 'Buy & sell between Erasmus students',
+    body: 'IKEA furniture, kitchen sets, bedding, electronics — sold by students leaving the city to students just arriving. No commission, no middleman.',
+    stat: 'Free to list',
+    bg: '#f0ece4',
+    dark: false,
+  },
+  {
+    href: '/help',
+    label: 'Help',
+    headline: 'Your Bratislava setup guide',
+    body: "Bank account, police registration, health insurance, residence permit. Petra walks you through every step so you don't miss a deadline.",
+    stat: '5-step checklist',
+    bg: '#7c3aed',
+    dark: true,
+  },
+]
 
-export default function Home() {
-  const [listings, setListings]         = useState<Listing[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [category, setCategory]         = useState('all')
-  const [maxPrice, setMaxPrice]         = useState('all')
-  const [searchQ, setSearchQ]           = useState('')
-  const [showSold, setShowSold]         = useState(false)
-  const [sellOpen, setSellOpen]         = useState(false)
-  const [contactItem, setContactItem]   = useState<Listing | null>(null)
-  const [chatItem, setChatItem]         = useState<Listing | null>(null)
-  const [mapOpen, setMapOpen]           = useState(false)
-  const [authOpen, setAuthOpen]         = useState(false)
-  const [toast, setToast]               = useState<string | null>(null)
-  const [user, setUser]                 = useState<User | null>(null)
-  const [favoriteIds, setFavoriteIds]   = useState<Set<string>>(new Set())
-
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3500)
-  }
-
-  // Auth setup
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null)
-      // Only redirect to account when coming from OAuth (hash/query contains token)
-      if (event === 'SIGNED_IN' && session && (window.location.hash || window.location.search.includes('code'))) {
-        window.location.href = '/account'
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  // Load favorites when user logs in
-  useEffect(() => {
-    if (!user) { setFavoriteIds(new Set()); return }
-    const supabase = createClient()
-    Promise.resolve(supabase.from('favorites').select('listing_id').eq('user_id', user.id))
-      .then(({ data }) => setFavoriteIds(new Set(data?.map((f: { listing_id: string }) => f.listing_id) ?? [])))
-      .catch(() => {})
-  }, [user])
-
-  const fetchListings = useCallback(async () => {
-    setLoading(true)
-    try {
-      const p = new URLSearchParams()
-      if (category !== 'all') p.set('category', category)
-      if (maxPrice !== 'all') p.set('maxPrice', maxPrice)
-      if (searchQ)            p.set('q', searchQ)
-      if (showSold)           p.set('showSold', 'true')
-      const res  = await fetch(`/api/listings?${p}`)
-      const data = await res.json()
-      setListings(Array.isArray(data) ? data : [])
-    } catch { setListings([]) }
-    finally  { setLoading(false) }
-  }, [category, maxPrice, searchQ, showSold])
-
-  useEffect(() => { fetchListings() }, [fetchListings])
-
-  async function handleSell(body: Record<string, unknown>) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (user) headers['x-user-id'] = user.id
-
-    const res = await fetch('/api/listings', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ ...body, user_id: user?.id ?? null }),
-    })
-    if (res.ok) {
-      setSellOpen(false)
-      showToast('Your listing is live! 🎉')
-      fetchListings()
-    } else {
-      showToast('Something went wrong. Try again.')
-    }
-  }
-
-  async function handleContact(sender: { name: string; email: string; message: string }) {
-    if (!contactItem) return
-    const res = await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        listing_id: contactItem.id,
-        sender_name: sender.name,
-        sender_email: sender.email,
-        message: sender.message,
-      }),
-    })
-    if (res.ok) {
-      setContactItem(null)
-      showToast('Message sent! The seller will reply soon.')
-    } else {
-      showToast('Something went wrong. Try again.')
-    }
-  }
-
-  async function handleToggleFavorite(listing: Listing) {
-    if (!user) { setAuthOpen(true); return }
-    const isFav = favoriteIds.has(listing.id)
-
-    setFavoriteIds(prev => {
-      const next = new Set(prev)
-      isFav ? next.delete(listing.id) : next.add(listing.id)
-      return next
-    })
-
-    const supabase = createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fav = supabase.from('favorites') as any
-    if (isFav) {
-      await fav.delete().eq('user_id', user.id).eq('listing_id', listing.id)
-    } else {
-      await fav.upsert({ user_id: user.id, listing_id: listing.id })
-    }
-  }
-
-  async function handleMarkSold(listing: Listing) {
-    if (!user) return
-    const res = await fetch(`/api/listings/${listing.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
-      body: JSON.stringify({ is_sold: true }),
-    })
-    if (res.ok) { showToast('Marked as sold!'); fetchListings() }
-  }
-
-  async function handleDelete(listing: Listing) {
-    if (!user) return
-    if (!confirm(`Delete "${listing.title}"? This cannot be undone.`)) return
-    const res = await fetch(`/api/listings/${listing.id}`, {
-      method: 'DELETE',
-      headers: { 'x-user-id': user.id },
-    })
-    if (res.ok) { showToast('Listing deleted.'); fetchListings() }
-  }
-
-  async function handleSignOut() {
-    await createClient().auth.signOut()
-    setUser(null)
-    showToast('Signed out.')
-  }
-
-  const chatUser = user
-    ? { email: user.email!, name: user.email!.split('@')[0] }
-    : null
-
+export default function LandingPage() {
   return (
-    <>
+    <div style={{ minHeight: '100vh', background: '#f8f6f2', fontFamily: 'inherit' }}>
       <SiteHeader />
-      <main style={{ minHeight: '100vh', background: '#fafafa' }}>
-        {/* Marketplace header */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #efefef', padding: '32px 0 0' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px 24px', display: 'flex', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a0a0a0' }}>Bratislava · Erasmus</p>
-              <h1 style={{ margin: 0, fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 400, letterSpacing: '-.01em' }}>Second-hand marketplace</h1>
-            </div>
-            <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-              {/* Search */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f7f7f7', border: '1.5px solid #e0e0e0', borderRadius: 8, padding: '9px 14px', minWidth: 260 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a0a0a0" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input
-                  onChange={e => {
-                    const v = e.target.value
-                    clearTimeout((window as Window & { _sq?: ReturnType<typeof setTimeout> })._sq)
-                    ;(window as Window & { _sq?: ReturnType<typeof setTimeout> })._sq = setTimeout(() => setSearchQ(v), 320)
-                  }}
-                  placeholder="Search items..."
-                  style={{ border: 'none', background: 'none', fontSize: 13, color: '#0a0a0a', outline: 'none', fontFamily: 'inherit', width: '100%' }}
-                />
-              </div>
-              <button
-                onClick={() => setSellOpen(true)}
-                style={{ background: '#0a0a0a', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-              >+ List item</button>
-            </div>
+
+      {/* Hero */}
+      <section style={{ background: '#f8f6f2', padding: '72px 0 64px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px' }}>
+          <p style={{ margin: '0 0 18px', fontSize: 12, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#a0a0a0' }}>
+            Bratislava · Erasmus Platform
+          </p>
+          <h1 style={{
+            margin: '0 0 24px',
+            fontFamily: "'Lora',Georgia,serif",
+            fontStyle: 'italic',
+            fontWeight: 400,
+            fontSize: 'clamp(40px,6vw,76px)',
+            lineHeight: 1.08,
+            letterSpacing: '-.02em',
+            color: '#0a0a0a',
+            maxWidth: 820,
+          }}>
+            Everything you need<br />for Erasmus life<br />in Bratislava
+          </h1>
+          <p style={{ margin: '0 0 40px', fontSize: 17, color: '#666', maxWidth: 520, lineHeight: 1.65 }}>
+            Housing, storage, a second-hand marketplace and a paperwork guide — built for Erasmus students, by people who've been there.
+          </p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <a
+              href="/housing"
+              style={{ padding: '13px 26px', background: '#0a0a0a', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none', transition: 'opacity .18s' }}
+              onMouseEnter={e => ((e.target as HTMLElement).style.opacity = '.85')}
+              onMouseLeave={e => ((e.target as HTMLElement).style.opacity = '1')}
+            >Find a flat →</a>
+            <a
+              href="/marketplace"
+              style={{ padding: '13px 26px', background: 'transparent', color: '#0a0a0a', border: '1.5px solid #ccc', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
+              onMouseEnter={e => ((e.target as HTMLElement).style.borderColor = '#0a0a0a')}
+              onMouseLeave={e => ((e.target as HTMLElement).style.borderColor = '#ccc')}
+            >Browse marketplace</a>
           </div>
         </div>
+      </section>
 
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px' }}>
-          <ListingsSection
-            listings={listings}
-            loading={loading}
-            category={category}
-            maxPrice={maxPrice}
-            showSold={showSold}
-            favoriteIds={favoriteIds}
-            currentUserId={user?.id}
-            onCategoryChange={setCategory}
-            onMaxPriceChange={setMaxPrice}
-            onShowSoldChange={setShowSold}
-            onContact={setContactItem}
-            onChat={l => { if (!user) { setAuthOpen(true); return } setChatItem(l) }}
-            onToggleFavorite={handleToggleFavorite}
-            onMarkSold={handleMarkSold}
-            onDelete={handleDelete}
-            onMapOpen={() => setMapOpen(true)}
-          />
+      {/* Divider */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ height: 1, background: '#e8e4dc' }} />
+      </div>
+
+      {/* Sections */}
+      <section style={{ padding: '64px 0 80px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(480px,1fr))', gap: 16 }}>
+          {SECTIONS.map(s => (
+            <a
+              key={s.href}
+              href={s.href}
+              style={{ textDecoration: 'none', display: 'block', borderRadius: 14, overflow: 'hidden', transition: 'transform .2s, box-shadow .2s' }}
+              onMouseEnter={e => { const el = e.currentTarget; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 12px 40px rgba(0,0,0,.13)' }}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.transform = ''; el.style.boxShadow = '' }}
+            >
+              <div style={{ background: s.bg, padding: '40px 36px 36px', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ margin: '0 0 16px', fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: s.dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)' }}>
+                    {s.label}
+                  </p>
+                  <h2 style={{ margin: '0 0 14px', fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(22px,2.5vw,30px)', lineHeight: 1.2, color: s.dark ? '#fff' : '#0a0a0a' }}>
+                    {s.headline}
+                  </h2>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: s.dark ? 'rgba(255,255,255,.65)' : '#555', maxWidth: 400 }}>
+                    {s.body}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 32 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: s.dark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.35)', letterSpacing: '.06em' }}>
+                    {s.stat}
+                  </span>
+                  <span style={{ fontSize: 22, color: s.dark ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.3)', lineHeight: 1 }}>→</span>
+                </div>
+              </div>
+            </a>
+          ))}
         </div>
-      </main>
+      </section>
+
+      {/* About strip */}
+      <section style={{ background: '#0a0a0a', padding: '64px 0' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px', display: 'flex', gap: 64, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ flex: '0 0 auto' }}>
+            <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 32, letterSpacing: '.1em', color: '#fff' }}>ČAU</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <p style={{ margin: '0 0 8px', fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontSize: 22, fontWeight: 400, color: '#fff', lineHeight: 1.4 }}>
+              Built by people who did Erasmus in Bratislava.
+            </p>
+            <p style={{ margin: 0, fontSize: 14, color: 'rgba(255,255,255,.5)', lineHeight: 1.7, maxWidth: 480 }}>
+              We know how hard the first weeks can be — finding a flat over WhatsApp, hauling boxes to the train station, googling &quot;Slovakia bank account for foreigners&quot; at midnight. Čau Bratislava exists so you don&apos;t have to.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 48, flexShrink: 0, flexWrap: 'wrap' }}>
+            {[['500+', 'students helped'], ['12', 'verified flats'], ['1k+', 'items sold'], ['Free', 'to use']].map(([n, l]) => (
+              <div key={l}>
+                <p style={{ margin: '0 0 4px', fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{n}</p>
+                <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.4)', fontWeight: 500 }}>{l}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <Footer />
-
-      {sellOpen    && <SellModal onClose={() => setSellOpen(false)} onSubmit={handleSell} />}
-      {contactItem && <ContactModal listing={contactItem} onClose={() => setContactItem(null)} onSubmit={handleContact} />}
-      {authOpen    && <AuthModal onClose={() => setAuthOpen(false)} />}
-      {mapOpen     && <MapModal listings={listings} onClose={() => setMapOpen(false)} onContact={l => { setMapOpen(false); setContactItem(l) }} />}
-      {chatItem    && chatUser && (
-        <ChatModal
-          listing={chatItem}
-          currentEmail={chatUser.email}
-          currentName={chatUser.name}
-          onClose={() => setChatItem(null)}
-        />
-      )}
-
-      <Toast message={toast} />
-    </>
+    </div>
   )
 }
