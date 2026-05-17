@@ -9,7 +9,7 @@ const WAREHOUSES = ['Petržalka', 'Ružinov', 'Staré Mesto']
 
 export default function StoragePage() {
   const [step, setStep] = useState<Step>('form')
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     items: '',
     dropoff: '',
     pickup: '',
@@ -19,7 +19,7 @@ export default function StoragePage() {
   })
   const [bookingNum] = useState(() => `2026-${Math.floor(100 + Math.random() * 900)}`)
 
-  function set(k: keyof typeof form) {
+  function set(k: FormKey) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(prev => ({ ...prev, [k]: e.target.value }))
   }
@@ -66,9 +66,12 @@ export default function StoragePage() {
   )
 }
 
+type FormKey = 'name' | 'email' | 'items' | 'dropoff' | 'pickup' | 'warehouse'
+type FormState = Record<FormKey, string>
+
 function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit }: {
-  form: Record<string, string>
-  set: (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+  form: FormState
+  set: (k: FormKey) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
   days: number | null
   price: number | null
   inputStyle: React.CSSProperties
@@ -143,7 +146,7 @@ function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit 
 }
 
 function BookingConfirmed({ form, bookingNum, days, price, onNew }: {
-  form: Record<string, string>
+  form: FormState
   bookingNum: string
   days: number
   price: number
