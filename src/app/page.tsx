@@ -130,10 +130,12 @@ export default function Home() {
     })
 
     const supabase = createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fav = supabase.from('favorites') as any
     if (isFav) {
-      await supabase.from('favorites').delete().eq('user_id', user.id).eq('listing_id', listing.id)
+      await fav.delete().eq('user_id', user.id).eq('listing_id', listing.id)
     } else {
-      await supabase.from('favorites').upsert({ user_id: user.id, listing_id: listing.id })
+      await fav.upsert({ user_id: user.id, listing_id: listing.id })
     }
   }
 
