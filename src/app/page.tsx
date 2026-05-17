@@ -167,7 +167,7 @@ export default function Home() {
 
   return (
     <>
-      <SiteHeader user={user} onSignIn={() => setAuthOpen(true)} onSignOut={handleSignOut} />
+      <SiteHeader />
       <main style={{ minHeight: '100vh', background: '#fafafa' }}>
         {/* Marketplace header */}
         <div style={{ background: '#fff', borderBottom: '1px solid #efefef', padding: '32px 0 0' }}>
