@@ -34,15 +34,21 @@ export default function AccountPage() {
   useEffect(() => {
     if (!user) return
     setLoading(true)
+    const supabase = createClient()
+
     Promise.all([
       fetch(`/api/listings?user_id=${user.id}&all=true`).then(r => r.json()),
-      fetch('/api/favorites', { headers: { 'x-user-id': user.id } })
-        .then(r => r.json())
-        .then(async (ids: string[]) => {
+      supabase.from('favorites').select('listing_id').eq('user_id', user.id)
+        .then(async ({ data: favData }) => {
+          const ids = favData?.map((f: { listing_id: string }) => f.listing_id) ?? []
           if (!ids.length) return []
           return fetch(`/api/listings?ids=${ids.join(',')}&all=true`).then(r => r.json())
         }),
-      fetch(`/api/conversations?seller_email=${encodeURIComponent(user.email!)}`).then(r => r.json()),
+      supabase.from('conversations')
+        .select('*, listings!inner(seller_email)')
+        .eq('listings.seller_email', user.email!)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => data ?? []),
     ]).then(([listings, favs, convs]) => {
       setMyListings(Array.isArray(listings) ? listings : [])
       setFavorites(Array.isArray(favs) ? favs : [])
