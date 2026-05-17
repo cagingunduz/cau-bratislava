@@ -20,13 +20,13 @@ export default function AccountPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.replace('/'); return }
-      setUser(data.user)
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) { router.replace('/'); return }
+      setUser(data.session.user)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) router.replace('/')
-      else setUser(session.user)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') { router.replace('/'); return }
+      if (session) setUser(session.user)
     })
     return () => subscription.unsubscribe()
   }, [router])
