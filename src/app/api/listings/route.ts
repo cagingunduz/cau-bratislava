@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
   const maxPrice = searchParams.get('maxPrice')
   const q        = searchParams.get('q')
   const showSold = searchParams.get('showSold') === 'true'
+  const userId   = searchParams.get('user_id')
+  const ids      = searchParams.get('ids')
+  const all      = searchParams.get('all') === 'true'
 
   let query = db()
     .from('listings')
@@ -23,7 +26,9 @@ export async function GET(req: NextRequest) {
     .order('is_urgent', { ascending: false })
     .order('created_at', { ascending: false })
 
-  if (!showSold) query = query.eq('is_sold', false)
+  if (!showSold && !all) query = query.eq('is_sold', false)
+  if (userId)             query = query.eq('user_id', userId)
+  if (ids)                query = query.in('id', ids.split(','))
   if (category !== 'all') query = query.eq('category', category)
   if (maxPrice)           query = query.lte('price', Number(maxPrice))
   if (q)                  query = query.ilike('title', `%${q}%`)
