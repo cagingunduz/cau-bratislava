@@ -44,9 +44,13 @@ export default function Home() {
   // Auth setup
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      // Only redirect to account when coming from OAuth (hash/query contains token)
+      if (event === 'SIGNED_IN' && session && (window.location.hash || window.location.search.includes('code'))) {
+        window.location.href = '/account'
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -54,9 +58,9 @@ export default function Home() {
   // Load favorites when user logs in
   useEffect(() => {
     if (!user) { setFavoriteIds(new Set()); return }
-    fetch('/api/favorites', { headers: { 'x-user-id': user.id } })
-      .then(r => r.json())
-      .then((ids: string[]) => setFavoriteIds(new Set(ids)))
+    const supabase = createClient()
+    supabase.from('favorites').select('listing_id').eq('user_id', user.id)
+      .then(({ data }) => setFavoriteIds(new Set(data?.map((f: { listing_id: string }) => f.listing_id) ?? [])))
       .catch(() => {})
   }, [user])
 
@@ -118,7 +122,6 @@ export default function Home() {
   async function handleToggleFavorite(listing: Listing) {
     if (!user) { setAuthOpen(true); return }
     const isFav = favoriteIds.has(listing.id)
-    const method = isFav ? 'DELETE' : 'POST'
 
     setFavoriteIds(prev => {
       const next = new Set(prev)
@@ -126,11 +129,12 @@ export default function Home() {
       return next
     })
 
-    await fetch('/api/favorites', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ listing_id: listing.id, user_id: user.id }),
-    })
+    const supabase = createClient()
+    if (isFav) {
+      await supabase.from('favorites').delete().eq('user_id', user.id).eq('listing_id', listing.id)
+    } else {
+      await supabase.from('favorites').upsert({ user_id: user.id, listing_id: listing.id })
+    }
   }
 
   async function handleMarkSold(listing: Listing) {

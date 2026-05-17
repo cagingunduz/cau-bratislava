@@ -12,8 +12,20 @@ function db() {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const listing_id  = searchParams.get('listing_id')
-  const buyer_email = searchParams.get('buyer_email')
+  const listing_id   = searchParams.get('listing_id')
+  const buyer_email  = searchParams.get('buyer_email')
+  const seller_email = searchParams.get('seller_email')
+
+  // Seller fetching all their conversations
+  if (seller_email) {
+    const { data, error } = await db()
+      .from('conversations')
+      .select('*, listings!inner(seller_email)')
+      .eq('listings.seller_email', seller_email)
+      .order('created_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data ?? [])
+  }
 
   if (!listing_id || !buyer_email) {
     return NextResponse.json({ error: 'Missing params' }, { status: 400 })

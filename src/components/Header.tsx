@@ -108,6 +108,13 @@ export default function Header({ onSell, onSearch, onSignIn, user, onSignOut }: 
                     <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid #f0f0f0', marginBottom: 4 }}>
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 700 }}>{user.email}</p>
                     </div>
+                    <a
+                      href="/account"
+                      onClick={() => setMenuOpen(false)}
+                      style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, fontWeight: 500, color: '#707070', borderRadius: 4, fontFamily: 'inherit', textDecoration: 'none' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f7f7f7')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                    >My account</a>
                     <button
                       onClick={() => { setMenuOpen(false); onSignOut() }}
                       style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, fontWeight: 500, color: '#707070', borderRadius: 4, fontFamily: 'inherit' }}
