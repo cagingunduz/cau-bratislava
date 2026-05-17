@@ -36,13 +36,19 @@ create policy "Users can delete own favorites"
   using (auth.uid() = user_id);
 
 -- 3. Listing owner policies
-create policy if not exists "Owners can update their listings"
-  on public.listings for update
-  using (auth.uid() = user_id);
-
-create policy if not exists "Owners can delete their listings"
-  on public.listings for delete
-  using (auth.uid() = user_id);
+do $$
+begin
+  if not exists (select 1 from pg_policies where tablename = 'listings' and policyname = 'Owners can update their listings') then
+    create policy "Owners can update their listings"
+      on public.listings for update
+      using (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'listings' and policyname = 'Owners can delete their listings') then
+    create policy "Owners can delete their listings"
+      on public.listings for delete
+      using (auth.uid() = user_id);
+  end if;
+end $$;
 
 -- 4. Conversations table (real-time chat)
 create table if not exists public.conversations (
