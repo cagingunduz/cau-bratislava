@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 const PHOTOS = {
   hero:        'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=85&auto=format&fit=crop',
   housing:     'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&q=80&auto=format&fit=crop',
-  storage:     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80&auto=format&fit=crop',
+  storage:     'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=900&q=80&auto=format&fit=crop',
   marketplace: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=900&q=80&auto=format&fit=crop',
   help:        'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=900&q=80&auto=format&fit=crop',
   students:    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=900&q=80&auto=format&fit=crop',
