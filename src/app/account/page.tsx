@@ -51,7 +51,7 @@ export default function AccountPage() {
           .select('*, listings!inner(seller_email)')
           .eq('listings.seller_email', user.email!)
           .order('created_at', { ascending: false })
-      ).then(({ data }: { data: unknown[] | null }) => data ?? []),
+      ).then(({ data }: { data: Conversation[] | null }) => data ?? []),
     ]).then(([listings, favs, convs]) => {
       setMyListings(Array.isArray(listings) ? listings : [])
       setFavorites(Array.isArray(favs) ? favs : [])
