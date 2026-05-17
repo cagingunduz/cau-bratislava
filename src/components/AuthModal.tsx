@@ -27,13 +27,12 @@ export default function AuthModal({ onClose }: Props) {
       const { error } = await supabase.auth.signUp({ email, password })
       setLoading(false)
       if (error) { setErr(error.message); return }
-      setSuccess('Account created! You are now signed in.')
-      setTimeout(onClose, 1500)
+      window.location.href = '/account'
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       setLoading(false)
       if (error) { setErr(error.message); return }
-      onClose()
+      window.location.href = '/account'
     }
   }
 
