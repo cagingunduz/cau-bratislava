@@ -7,13 +7,15 @@ interface Props { onClose: () => void }
 type Mode = 'signin' | 'signup'
 
 export default function AuthModal({ onClose }: Props) {
-  const [mode, setMode]       = useState<Mode>('signin')
-  const [email, setEmail]     = useState('')
+  const [mode, setMode]         = useState<Mode>('signin')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName]   = useState('')
+  const [loading, setLoading]     = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [err, setErr]         = useState('')
-  const [success, setSuccess] = useState('')
+  const [err, setErr]             = useState('')
+  const [success, setSuccess]     = useState('')
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault()
@@ -24,7 +26,11 @@ export default function AuthModal({ onClose }: Props) {
     const supabase = createClient()
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const full_name = `${firstName.trim()} ${lastName.trim()}`.trim()
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name } },
+      })
       setLoading(false)
       if (error) { setErr(error.message); return }
       window.location.href = '/account'
@@ -93,6 +99,30 @@ export default function AuthModal({ onClose }: Props) {
 
         {/* Email + password */}
         <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {mode === 'signup' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <input
+                required
+                type="text"
+                placeholder="First name"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                style={inputStyle}
+                onFocus={e => (e.currentTarget.style.borderColor = '#0a0a0a')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
+              />
+              <input
+                required
+                type="text"
+                placeholder="Last name"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                style={inputStyle}
+                onFocus={e => (e.currentTarget.style.borderColor = '#0a0a0a')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
+              />
+            </div>
+          )}
           <input
             required
             type="email"
