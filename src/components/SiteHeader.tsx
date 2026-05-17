@@ -8,7 +8,7 @@ import AuthModal from './AuthModal'
 const NAV = [
   { label: 'Housing',     href: '/housing' },
   { label: 'Storage',     href: '/storage' },
-  { label: 'Marketplace', href: '/' },
+  { label: 'Marketplace', href: '/marketplace' },
   { label: 'Help',        href: '/help' },
 ]
 
@@ -42,8 +42,7 @@ export default function SiteHeader() {
     window.location.href = '/'
   }
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href)
+  const isActive = (href: string) => pathname === href || (href !== '/marketplace' && href !== '/' && pathname.startsWith(href))
 
   return (
     <>
