@@ -98,17 +98,37 @@ export default function SiteHeader() {
           <div style={{ marginLeft: 'auto' }}>
             {user ? (
               <div ref={menuRef} style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setMenuOpen(o => !o)}
-                  title={user.email}
-                  style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: '#7c3aed', color: '#fff',
-                    border: 'none', cursor: 'pointer',
-                    fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >{user.email?.[0].toUpperCase()}</button>
+                {(() => {
+                  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+                  const initial = (fullName || user.email || 'U')[0].toUpperCase()
+                  return (
+                    <button
+                      onClick={() => setMenuOpen(o => !o)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: 'none', border: '1.5px solid #e0e0e0',
+                        borderRadius: 100, padding: '4px 12px 4px 4px',
+                        cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color .18s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = '#0a0a0a')}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
+                    >
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: '#7c3aed', color: '#fff',
+                        fontSize: 12, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>{initial}</div>
+                      {fullName && (
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#0a0a0a', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {fullName}
+                        </span>
+                      )}
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+                  )
+                })()}
                 {menuOpen && (
                   <div style={{
                     position: 'absolute', top: 'calc(100% + 8px)', right: 0,
