@@ -15,13 +15,15 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get('category') || 'all'
   const maxPrice = searchParams.get('maxPrice')
   const q        = searchParams.get('q')
+  const showSold = searchParams.get('showSold') === 'true'
 
   let query = db()
     .from('listings')
     .select('*')
-    .eq('is_sold', false)
+    .order('is_urgent', { ascending: false })
     .order('created_at', { ascending: false })
 
+  if (!showSold) query = query.eq('is_sold', false)
   if (category !== 'all') query = query.eq('category', category)
   if (maxPrice)           query = query.lte('price', Number(maxPrice))
   if (q)                  query = query.ilike('title', `%${q}%`)
@@ -35,7 +37,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { data, error } = await db()
     .from('listings')
-    .insert([{ ...body, is_sold: false }])
+    .insert([{
+      ...body,
+      is_sold: false,
+      is_bundle: body.is_bundle ?? false,
+      bundle_items: body.bundle_items ?? [],
+    }])
     .select()
     .single()
 
