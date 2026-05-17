@@ -5,13 +5,11 @@ import { createClient } from '@/lib/auth'
 
 export default function AuthCallback() {
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code')
-    if (!code) { window.location.href = '/'; return }
-
-    createClient()
-      .auth.exchangeCodeForSession(code)
-      .then(() => { window.location.href = '/account' })
-      .catch(() => { window.location.href = '/' })
+    const supabase = createClient()
+    // detectSessionInUrl:true → SDK reads token from URL hash automatically
+    supabase.auth.getSession().then(({ data }) => {
+      window.location.href = data.session ? '/account' : '/'
+    })
   }, [])
 
   return (
