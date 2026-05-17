@@ -36,19 +36,22 @@ export default function AccountPage() {
     setLoading(true)
     const supabase = createClient()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any
     Promise.all([
       fetch(`/api/listings?user_id=${user.id}&all=true`).then(r => r.json()),
-      supabase.from('favorites').select('listing_id').eq('user_id', user.id)
-        .then(async ({ data: favData }) => {
-          const ids = favData?.map((f: { listing_id: string }) => f.listing_id) ?? []
+      Promise.resolve(db.from('favorites').select('listing_id').eq('user_id', user.id))
+        .then(async ({ data: favData }: { data: { listing_id: string }[] | null }) => {
+          const ids = favData?.map(f => f.listing_id) ?? []
           if (!ids.length) return []
           return fetch(`/api/listings?ids=${ids.join(',')}&all=true`).then(r => r.json())
         }),
-      supabase.from('conversations')
-        .select('*, listings!inner(seller_email)')
-        .eq('listings.seller_email', user.email!)
-        .order('created_at', { ascending: false })
-        .then(({ data }) => data ?? []),
+      Promise.resolve(
+        db.from('conversations')
+          .select('*, listings!inner(seller_email)')
+          .eq('listings.seller_email', user.email!)
+          .order('created_at', { ascending: false })
+      ).then(({ data }: { data: Conversation[] | null }) => data ?? []),
     ]).then(([listings, favs, convs]) => {
       setMyListings(Array.isArray(listings) ? listings : [])
       setFavorites(Array.isArray(favs) ? favs : [])
