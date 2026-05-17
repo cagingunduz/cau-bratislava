@@ -44,10 +44,11 @@ export default function Home() {
   // Auth setup
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (event === 'SIGNED_IN' && session) {
+      // Only redirect to account when coming from OAuth (hash/query contains token)
+      if (event === 'SIGNED_IN' && session && (window.location.hash || window.location.search.includes('code'))) {
         window.location.href = '/account'
       }
     })
