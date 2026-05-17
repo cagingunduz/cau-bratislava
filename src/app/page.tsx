@@ -59,7 +59,7 @@ export default function Home() {
   useEffect(() => {
     if (!user) { setFavoriteIds(new Set()); return }
     const supabase = createClient()
-    supabase.from('favorites').select('listing_id').eq('user_id', user.id)
+    Promise.resolve(supabase.from('favorites').select('listing_id').eq('user_id', user.id))
       .then(({ data }) => setFavoriteIds(new Set(data?.map((f: { listing_id: string }) => f.listing_id) ?? [])))
       .catch(() => {})
   }, [user])
