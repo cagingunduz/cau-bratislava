@@ -14,9 +14,10 @@ const NAV = [
 
 export default function SiteHeader() {
   const pathname  = usePathname()
-  const [user, setUser]       = useState<User | null>(null)
-  const [authOpen, setAuthOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [user, setUser]           = useState<User | null>(null)
+  const [authOpen, setAuthOpen]   = useState(false)
+  const [signupMode, setSignupMode] = useState(false)
+  const [menuOpen, setMenuOpen]   = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -156,27 +157,26 @@ export default function SiteHeader() {
                 )}
               </div>
             ) : (
-              <button
-                onClick={() => setAuthOpen(true)}
-                title="Sign in"
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: '#7c3aed', color: '#fff',
-                  border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => setAuthOpen(true)}
+                  style={{ padding: '8px 16px', background: 'none', border: '1.5px solid #e0e0e0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: '#0a0a0a', transition: 'border-color .18s' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#0a0a0a')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
+                >Log in</button>
+                <button
+                  onClick={() => { setAuthOpen(true); setSignupMode(true) }}
+                  style={{ padding: '8px 16px', background: '#7c3aed', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: '#fff', transition: 'opacity .18s' }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '.85')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                >Sign up</button>
+              </div>
             )}
           </div>
         </div>
       </header>
 
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+      {authOpen && <AuthModal initialMode={signupMode ? 'signup' : 'signin'} onClose={() => { setAuthOpen(false); setSignupMode(false) }} />}
     </>
   )
 }
