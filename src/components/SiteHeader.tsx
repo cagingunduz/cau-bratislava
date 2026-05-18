@@ -74,7 +74,7 @@ export default function SiteHeader() {
             color: '#0a0a0a',
             textDecoration: 'none',
             flexShrink: 0,
-            marginLeft: isMobile ? 8 : 0,
+            marginLeft: isMobile ? 14 : 0,
           }}>ČAU</Link>
 
           <nav style={{
