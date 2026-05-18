@@ -44,6 +44,7 @@ export default function HelpPage() {
   ])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
+  const messagesRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const isMobile = useMediaQuery('(max-width: 820px)')
 
@@ -51,7 +52,9 @@ export default function HelpPage() {
   const total = tasks.length
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const messagesEl = messagesRef.current
+    if (!messagesEl) return
+    messagesEl.scrollTop = messagesEl.scrollHeight
   }, [msgs, typing])
 
   function toggleTask(id: string) {
@@ -166,7 +169,7 @@ export default function HelpPage() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div ref={messagesRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {msgs.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.from === 'petra' ? 'flex-start' : 'flex-end' }}>
                   {msg.from === 'petra' && (
