@@ -56,7 +56,13 @@ export default function LandingPage() {
           </div>
 
           {/* Photo */}
-          <div style={{ position: 'relative', height: isMobile ? 300 : 480, borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
+          <div style={{
+            position: 'relative',
+            height: isMobile ? 300 : 480,
+            borderRadius: isMobile ? 18 : '18px 18px 0 0',
+            overflow: 'hidden',
+            marginBottom: isMobile ? 28 : 0,
+          }}>
             <img
               src={PHOTOS.hero}
               alt="Bratislava"
