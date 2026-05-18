@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
 import type { BundleItem } from '@/types'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 interface Props { onClose: () => void; onSubmit: (data: Record<string, unknown>) => void }
 
@@ -17,6 +18,7 @@ export default function SellModal({ onClose, onSubmit }: Props) {
   const [isBundle, setIsBundle]     = useState(false)
   const [bundleItems, setBundleItems] = useState<BundleItem[]>([{ name: '', price: 0 }])
   const fileRef = useRef<HTMLInputElement>(null)
+  const isMobile = useMediaQuery('(max-width: 640px)')
 
   function set(key: string, value: string) { setForm(f => ({ ...f, [key]: value })) }
 
@@ -79,11 +81,11 @@ export default function SellModal({ onClose, onSubmit }: Props) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 10 : 20 }}
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 600, maxHeight: '92vh', overflowY: 'auto', padding: 40, position: 'relative' }}
+        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 600, maxHeight: isMobile ? 'calc(100vh - 20px)' : '92vh', overflowY: 'auto', padding: isMobile ? '24px 18px' : 40, position: 'relative' }}
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, borderRadius: '50%', background: '#f0f0f0', color: '#707070', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}>✕</button>
@@ -110,10 +112,10 @@ export default function SellModal({ onClose, onSubmit }: Props) {
 
           {/* Bundle items */}
           {isBundle && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px', background: '#fafafa', borderRadius: 8, border: '1.5px solid #e0e0e0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: isMobile ? 12 : 16, background: '#fafafa', borderRadius: 8, border: '1.5px solid #e0e0e0' }}>
               <label style={labelStyle}>Bundle items</label>
               {bundleItems.map((item, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 36px', gap: 8 }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 82px 34px' : '1fr 100px 36px', gap: 8 }}>
                   <input
                     placeholder="Item name"
                     value={item.name}
@@ -147,7 +149,7 @@ export default function SellModal({ onClose, onSubmit }: Props) {
           )}
 
           {/* Title + Category */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
             <div>
               <label style={labelStyle}>Item title *</label>
               <input required value={form.title} onChange={e => set('title', e.target.value)} placeholder={isBundle ? 'e.g. Full room package' : 'e.g. IKEA KALLAX shelf'} style={inputStyle} />
@@ -171,7 +173,7 @@ export default function SellModal({ onClose, onSubmit }: Props) {
 
           {/* Price + Condition */}
           {!isBundle && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
               <div>
                 <label style={labelStyle}>Price (€) *</label>
                 <input required type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0" style={inputStyle} />
@@ -200,7 +202,7 @@ export default function SellModal({ onClose, onSubmit }: Props) {
           )}
 
           {/* Seller info */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
             <div>
               <label style={labelStyle}>Your name *</label>
               <input required value={form.seller_name} onChange={e => set('seller_name', e.target.value)} placeholder="First name" style={inputStyle} />
@@ -211,7 +213,7 @@ export default function SellModal({ onClose, onSubmit }: Props) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
             <div>
               <label style={labelStyle}>University</label>
               <input value={form.university} onChange={e => set('university', e.target.value)} placeholder="e.g. Comenius University" style={inputStyle} />

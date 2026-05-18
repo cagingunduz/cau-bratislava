@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { createClient } from '@/lib/auth'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 type Mode = 'signin' | 'signup'
 
@@ -16,6 +17,7 @@ export default function AuthModal({ onClose, initialMode = 'signin' }: Props) {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [err, setErr]             = useState('')
   const [success, setSuccess]     = useState('')
+  const isMobile = useMediaQuery('(max-width: 480px)')
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault()
@@ -59,11 +61,11 @@ export default function AuthModal({ onClose, initialMode = 'signin' }: Props) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 12 : 20 }}
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 420, padding: 36, position: 'relative' }}
+        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 420, padding: isMobile ? '28px 18px 22px' : 36, position: 'relative' }}
         onClick={e => e.stopPropagation()}
       >
         <button
@@ -100,7 +102,7 @@ export default function AuthModal({ onClose, initialMode = 'signin' }: Props) {
         {/* Email + password */}
         <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {mode === 'signup' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
               <input
                 required
                 type="text"

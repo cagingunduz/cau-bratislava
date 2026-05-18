@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import SiteHeader from '@/components/SiteHeader'
 import Footer from '@/components/Footer'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const TASKS = [
   { id: 'bank',       label: 'Open Slovak bank account',   est: '2 days',  done: true },
@@ -44,6 +45,7 @@ export default function HelpPage() {
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const isMobile = useMediaQuery('(max-width: 820px)')
 
   const done  = tasks.filter(t => t.done).length
   const total = tasks.length
@@ -74,14 +76,14 @@ export default function HelpPage() {
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'inherit' }}>
       <SiteHeader />
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 28px 80px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '48px 28px 80px' }}>
         <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a0a0a0' }}>Paperwork</p>
         <h1 style={{ margin: '0 0 6px', fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 400 }}>
           Your setup plan
         </h1>
         <p style={{ margin: '0 0 36px', fontSize: 13, color: '#a0a0a0' }}>Personalized for: Erasmus in Bratislava · Spring 2026</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: 24, alignItems: 'start' }}>
           {/* Checklist */}
           <div>
             <div style={{ background: '#fff', border: '1.5px solid #ececec', borderRadius: 12, overflow: 'hidden' }}>
@@ -101,7 +103,7 @@ export default function HelpPage() {
                 <div
                   key={task.id}
                   onClick={() => toggleTask(task.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f5f5f5', cursor: 'pointer', transition: 'background .15s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: isMobile ? '16px' : '16px 24px', borderBottom: '1px solid #f5f5f5', cursor: 'pointer', transition: 'background .15s' }}
                   onMouseEnter={e => (e.currentTarget.style.background = '#fafafa')}
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
@@ -153,7 +155,7 @@ export default function HelpPage() {
           </div>
 
           {/* Petra chat */}
-          <div style={{ background: '#1a1a1a', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 540, position: 'sticky', top: 80 }}>
+          <div style={{ background: '#1a1a1a', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: isMobile ? 500 : 540, position: isMobile ? 'static' : 'sticky', top: 80 }}>
             {/* Chat header */}
             <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>P</div>

@@ -1,6 +1,7 @@
 'use client'
 import SiteHeader from '@/components/SiteHeader'
 import Footer from '@/components/Footer'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const PHOTOS = {
   hero:        'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=85&auto=format&fit=crop',
@@ -25,14 +26,16 @@ const TESTIMONIALS = [
 ]
 
 export default function LandingPage() {
+  const isMobile = useMediaQuery('(max-width: 760px)')
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8f6f2', fontFamily: 'inherit' }}>
       <SiteHeader />
 
       {/* ── HERO ── */}
-      <section style={{ background: '#f8f6f2', padding: '72px 0 0', overflow: 'hidden' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
-          <div style={{ paddingBottom: 72 }}>
+      <section style={{ background: '#f8f6f2', padding: isMobile ? '40px 0 0' : '72px 0 0', overflow: 'hidden' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 28 : 48, alignItems: 'center' }}>
+          <div style={{ paddingBottom: isMobile ? 0 : 72 }}>
             <p style={{ margin: '0 0 20px', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#a0a0a0' }}>
               Bratislava · Erasmus Platform
             </p>
@@ -42,18 +45,18 @@ export default function LandingPage() {
             <p style={{ margin: '0 0 36px', fontSize: 16, color: '#666', lineHeight: 1.7, maxWidth: 440 }}>
               Verified housing, summer storage, a second-hand marketplace and a step-by-step paperwork guide — built for Erasmus students who just arrived and have no idea where to start.
             </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <a href="/housing" style={{ padding: '13px 26px', background: '#0a0a0a', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
+              <a href="/housing" style={{ padding: '13px 26px', background: '#0a0a0a', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>
                 Find a flat →
               </a>
-              <a href="/marketplace" style={{ padding: '13px 26px', background: 'transparent', color: '#0a0a0a', border: '1.5px solid #ccc', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              <a href="/marketplace" style={{ padding: '13px 26px', background: 'transparent', color: '#0a0a0a', border: '1.5px solid #ccc', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
                 Browse marketplace
               </a>
             </div>
           </div>
 
           {/* Photo */}
-          <div style={{ position: 'relative', height: 480, borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', height: isMobile ? 300 : 480, borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
             <img
               src={PHOTOS.hero}
               alt="Bratislava"
@@ -168,7 +171,7 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 20 }}>
             {TESTIMONIALS.map(t => (
               <div key={t.name} style={{ background: '#fff', border: '1px solid #ececec', borderRadius: 14, padding: '28px 28px 24px' }}>
-                <p style={{ margin: '0 0 24px', fontSize: 32, color: '#e0dbd4', fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</p>
+                <p style={{ margin: '0 0 24px', fontSize: 32, color: '#e0dbd4', fontFamily: 'Georgia,serif', lineHeight: 1 }}>&ldquo;</p>
                 <p style={{ margin: '0 0 24px', fontSize: 15, color: '#333', lineHeight: 1.7, fontStyle: 'italic' }}>{t.quote}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0a0a0a', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{t.initial}</div>
@@ -185,7 +188,7 @@ export default function LandingPage() {
 
       {/* ── CTA ── */}
       <section style={{ background: '#0a0a0a', padding: '88px 0' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px', display: 'grid', gridTemplateColumns: '1fr auto', gap: 40, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: 40, alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
             <h2 style={{ margin: '0 0 10px', fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(26px,3.5vw,44px)', color: '#fff', lineHeight: 1.2 }}>
               Your Erasmus in Bratislava<br />starts here.
@@ -215,20 +218,21 @@ function FeatureRow({ photo, photoAlt, label, headline, body, bullets, cta, href
   photo: string; photoAlt: string; label: string; headline: string; body: string
   bullets: string[]; cta: string; href: string; bg: string; dark?: boolean; reverse?: boolean
 }) {
+  const isMobile = useMediaQuery('(max-width: 760px)')
   const txt = dark ? '#fff' : '#0a0a0a'
   const sub = dark ? 'rgba(255,255,255,.6)' : '#555'
   const cap = dark ? 'rgba(255,255,255,.4)' : '#a0a0a0'
   const bul = dark ? 'rgba(255,255,255,.15)' : '#e0e0e0'
 
   return (
-    <section style={{ background: bg, padding: '80px 0' }}>
+    <section style={{ background: bg, padding: isMobile ? '56px 0' : '80px 0' }}>
       <div style={{
-        maxWidth: 1100, margin: '0 auto', padding: '0 28px',
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56, alignItems: 'center',
+        maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px',
+        display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 28 : 56, alignItems: 'center',
         direction: reverse ? 'rtl' : 'ltr',
       }}>
         {/* Photo */}
-        <div style={{ borderRadius: 14, overflow: 'hidden', height: 420, direction: 'ltr' }}>
+        <div style={{ borderRadius: 14, overflow: 'hidden', height: isMobile ? 280 : 420, direction: 'ltr' }}>
           <img src={photo} alt={photoAlt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
 

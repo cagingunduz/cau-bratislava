@@ -43,6 +43,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!user) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createClient() as any

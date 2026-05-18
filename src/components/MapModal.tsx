@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import type { Listing } from '@/types'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 interface Props {
   listings: Listing[]
@@ -16,6 +17,7 @@ export default function MapModal({ listings, onClose, onContact }: Props) {
   const mapRef   = useRef<HTMLDivElement>(null)
   const mapInst  = useRef<unknown>(null)
   const [selected, setSelected] = useState<Listing | null>(null)
+  const isMobile = useMediaQuery('(max-width: 640px)')
 
   useEffect(() => {
     if (!mapRef.current || mapInst.current) return
@@ -68,15 +70,15 @@ export default function MapModal({ listings, onClose, onContact }: Props) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 10 : 20 }}
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, height: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, height: isMobile ? 'calc(100vh - 20px)' : '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: isMobile ? '14px 16px' : '16px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Map view</h3>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: '#a0a0a0' }}>
@@ -88,13 +90,12 @@ export default function MapModal({ listings, onClose, onContact }: Props) {
 
         {/* Map */}
         <div style={{ flex: 1, position: 'relative' }}>
-          {/* eslint-disable-next-line @next/next/no-css-tags */}
           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
           <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
           {/* Selected listing card */}
           {selected && (
-            <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, background: '#fff', borderRadius: 10, padding: '14px 18px', boxShadow: '0 4px 24px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center', gap: 14, zIndex: 1000 }}>
+            <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, background: '#fff', borderRadius: 10, padding: isMobile ? 12 : '14px 18px', boxShadow: '0 4px 24px rgba(0,0,0,.15)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', gap: 12, zIndex: 1000, flexDirection: isMobile ? 'column' : 'row' }}>
               {selected.image_url && (
                 <img src={selected.image_url} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
               )}
@@ -105,7 +106,7 @@ export default function MapModal({ listings, onClose, onContact }: Props) {
               </div>
               <button
                 onClick={() => { onContact(selected); onClose() }}
-                style={{ flexShrink: 0, padding: '8px 16px', background: '#0a0a0a', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ flexShrink: 0, padding: '8px 16px', background: '#0a0a0a', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : 'auto' }}
               >Contact</button>
               <button onClick={() => setSelected(null)} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', border: 'none', cursor: 'pointer', fontSize: 12 }}>✕</button>
             </div>

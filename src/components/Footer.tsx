@@ -1,10 +1,15 @@
+'use client'
+
 import Logo from './Logo'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 export default function Footer() {
+  const isMobile = useMediaQuery('(max-width: 680px)')
+
   return (
-    <footer style={{ background:'#141414', padding:'64px 0 0' }}>
-      <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 28px' }}>
-        <div style={{ display:'flex', gap:64, marginBottom:48, flexWrap:'wrap' }}>
+    <footer style={{ background:'#141414', padding: isMobile ? '44px 0 0' : '64px 0 0' }}>
+      <div style={{ maxWidth:1280, margin:'0 auto', padding: isMobile ? '0 16px' : '0 28px' }}>
+        <div style={{ display:'flex', gap:isMobile ? 28 : 64, marginBottom:48, flexWrap:'wrap' }}>
           <div style={{ flex:'1.2 1 280px' }}>
             <a href="#" style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
               <div style={{ width:40, height:40 }}><Logo inverted /></div>
@@ -32,7 +37,7 @@ export default function Footer() {
             </div>
           ))}
         </div>
-        <div style={{ borderTop:'1px solid rgba(255,255,255,.08)', padding:'20px 0', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:16 }}>
+        <div style={{ borderTop:'1px solid rgba(255,255,255,.08)', padding:'20px 0', display:'flex', justifyContent:'space-between', alignItems:isMobile ? 'flex-start' : 'center', flexWrap:'wrap', gap:16, flexDirection:isMobile ? 'column' : 'row' }}>
           <p style={{ fontSize:12, color:'rgba(255,255,255,.25)' }}>© 2025 Čau Bratislava. Free for all Erasmus students. No fees, ever.</p>
           <p style={{ fontSize:12, color:'rgba(255,255,255,.25)' }}>Made with ♥ for students in Bratislava, Slovakia 🇸🇰</p>
         </div>

@@ -1,12 +1,14 @@
 'use client'
 import { useState } from 'react'
 import type { Listing } from '@/types'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 interface Props { listing: Listing; onClose: () => void; onSubmit: (s:{name:string;email:string;message:string}) => void }
 
 export default function ContactModal({ listing, onClose, onSubmit }: Props) {
   const [form, setForm] = useState({ name:'', email:'', message:'' })
   const [submitting, setSubmitting] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 520px)')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -19,8 +21,8 @@ export default function ContactModal({ listing, onClose, onSubmit }: Props) {
   const labelStyle = { fontSize:12, fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase' as const, color:'#707070', display:'block', marginBottom:6 }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.65)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:480, padding:40, position:'relative' }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.65)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:isMobile ? 12 : 20 }} onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:480, padding:isMobile ? '28px 18px 22px' : 40, position:'relative' }} onClick={e => e.stopPropagation()}>
         <button onClick={onClose} style={{ position:'absolute', top:20, right:20, width:36, height:36, borderRadius:'50%', background:'#f0f0f0', color:'#707070', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', border:'none' }}>✕</button>
 
         <h2 style={{ fontSize:24, fontWeight:800, marginBottom:4, letterSpacing:'-.02em' }}>Contact {listing.seller_name}</h2>
