@@ -5,18 +5,21 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import type { Listing, Conversation } from '@/types'
 import { createClient } from '@/lib/auth'
-import Logo from '@/components/Logo'
+import SiteHeader from '@/components/SiteHeader'
 
 type Tab = 'listings' | 'favorites' | 'messages'
+type MsgTab = 'received' | 'sent'
 
 export default function AccountPage() {
-  const router   = useRouter()
-  const [user, setUser]           = useState<User | null>(null)
-  const [tab, setTab]             = useState<Tab>('listings')
+  const router = useRouter()
+  const [user, setUser]                 = useState<User | null>(null)
+  const [tab, setTab]                   = useState<Tab>('listings')
+  const [msgTab, setMsgTab]             = useState<MsgTab>('received')
   const [myListings, setMyListings]     = useState<Listing[]>([])
   const [favorites, setFavorites]       = useState<Listing[]>([])
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [loading, setLoading]     = useState(true)
+  const [received, setReceived]         = useState<Conversation[]>([])
+  const [sent, setSent]                 = useState<Conversation[]>([])
+  const [loading, setLoading]           = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
@@ -34,10 +37,9 @@ export default function AccountPage() {
   useEffect(() => {
     if (!user) return
     setLoading(true)
-    const supabase = createClient()
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any
+    const db = createClient() as any
+
     Promise.all([
       fetch(`/api/listings?user_id=${user.id}&all=true`).then(r => r.json()),
       Promise.resolve(db.from('favorites').select('listing_id').eq('user_id', user.id))
@@ -52,17 +54,25 @@ export default function AccountPage() {
           .eq('listings.seller_email', user.email!)
           .order('created_at', { ascending: false })
       ).then(({ data }: { data: Conversation[] | null }) => data ?? []),
-    ]).then(([listings, favs, convs]) => {
+      Promise.resolve(
+        db.from('conversations')
+          .select('*, listings(seller_name, seller_email)')
+          .eq('buyer_email', user.email!)
+          .order('created_at', { ascending: false })
+      ).then(({ data }: { data: (Conversation & { listings?: { seller_name: string; seller_email: string } })[] | null }) =>
+        (data ?? []).map(c => ({
+          ...c,
+          seller_name: c.listings?.seller_name,
+          seller_email: c.listings?.seller_email,
+        }))
+      ),
+    ]).then(([listings, favs, recvd, snt]) => {
       setMyListings(Array.isArray(listings) ? listings : [])
       setFavorites(Array.isArray(favs) ? favs : [])
-      setConversations(Array.isArray(convs) ? convs : [])
+      setReceived(Array.isArray(recvd) ? recvd : [])
+      setSent(Array.isArray(snt) ? snt : [])
     }).finally(() => setLoading(false))
   }, [user])
-
-  async function handleSignOut() {
-    await createClient().auth.signOut()
-    window.location.href = '/'
-  }
 
   async function handleMarkSold(id: string) {
     await fetch(`/api/listings/${id}`, {
@@ -79,44 +89,41 @@ export default function AccountPage() {
     setMyListings(p => p.filter(l => l.id !== id))
   }
 
-  const s = styles
-
   if (!user) return null
+
+  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+  const displayName = fullName || user.email?.split('@')[0] || 'User'
+  const initial = displayName[0].toUpperCase()
+  const totalMessages = received.length + sent.length
+
+  const s = styles
 
   return (
     <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: 'inherit' }}>
-      {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32 }}><Logo /></div>
-            <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: '.05em', color: '#0a0a0a' }}>Čau Bratislava</span>
-          </a>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <a href="/" style={{ fontSize: 13, fontWeight: 500, color: '#707070', textDecoration: 'none' }}>← Back to listings</a>
-            <button onClick={handleSignOut} style={{ padding: '7px 14px', background: 'none', border: '1.5px solid #e0e0e0', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: '#707070' }}>Sign out</button>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px' }}>
         {/* Profile card */}
-        <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 12, padding: '28px 32px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#0a0a0a', color: '#fff', fontSize: 22, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {user.email?.[0].toUpperCase()}
-          </div>
+        <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 14, padding: '32px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: '#0a0a0a', color: '#fff',
+            fontSize: 26, fontWeight: 800,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, letterSpacing: '-.02em',
+          }}>{initial}</div>
           <div>
-            <p style={{ margin: '0 0 2px', fontSize: 18, fontWeight: 800 }}>{user.email?.split('@')[0]}</p>
+            <p style={{ margin: '0 0 3px', fontSize: 20, fontWeight: 800, color: '#0a0a0a', letterSpacing: '-.02em' }}>{displayName}</p>
             <p style={{ margin: 0, fontSize: 13, color: '#a0a0a0' }}>{user.email}</p>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 24 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 32 }}>
             {[
-              { label: 'Listings', value: myListings.length },
-              { label: 'Favorites', value: favorites.length },
-              { label: 'Messages', value: conversations.length },
+              { label: 'Listings',  value: myListings.length },
+              { label: 'Saved',     value: favorites.length },
+              { label: 'Messages',  value: totalMessages },
             ].map(stat => (
               <div key={stat.label} style={{ textAlign: 'center' }}>
-                <p style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 900 }}>{stat.value}</p>
+                <p style={{ margin: '0 0 2px', fontSize: 24, fontWeight: 900, color: '#0a0a0a' }}>{stat.value}</p>
                 <p style={{ margin: 0, fontSize: 12, color: '#a0a0a0', fontWeight: 500 }}>{stat.label}</p>
               </div>
             ))}
@@ -124,16 +131,19 @@ export default function AccountPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#f0f0f0', borderRadius: 8, padding: 4 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 28, background: '#f0f0f0', borderRadius: 10, padding: 4 }}>
           {([
-            { key: 'listings', label: 'My Listings' },
+            { key: 'listings',  label: 'My Listings' },
             { key: 'favorites', label: 'Saved' },
-            { key: 'messages', label: 'Messages' },
+            { key: 'messages',  label: 'Messages' },
           ] as { key: Tab; label: string }[]).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
-              flex: 1, padding: '9px', background: tab === t.key ? '#fff' : 'none',
-              border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'inherit', color: tab === t.key ? '#0a0a0a' : '#707070',
+              flex: 1, padding: '10px',
+              background: tab === t.key ? '#fff' : 'none',
+              border: 'none', borderRadius: 7,
+              fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: tab === t.key ? '#0a0a0a' : '#707070',
               boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,.08)' : 'none',
               transition: 'all .2s',
             }}>{t.label}</button>
@@ -194,7 +204,7 @@ export default function AccountPage() {
                       <div style={{ padding: '14px 16px' }}>
                         <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14 }}>{l.title}</p>
                         <p style={{ margin: '0 0 8px', fontSize: 13, color: '#a0a0a0' }}>€{l.price} · {l.seller_name}</p>
-                        <a href="/" style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', textDecoration: 'none' }}>View listing →</a>
+                        <a href="/marketplace" style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', textDecoration: 'none' }}>View listing →</a>
                       </div>
                     </div>
                   ))}
@@ -204,28 +214,93 @@ export default function AccountPage() {
 
             {/* Messages */}
             {tab === 'messages' && (
-              conversations.length === 0 ? (
-                <EmptyState icon="💬" title="No messages yet" sub="When buyers contact you about your listings, they'll appear here." />
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {conversations.map((conv: Conversation & { listing?: Listing; last_message?: string }) => (
-                    <div key={conv.id} style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 10, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                        {conv.buyer_name?.[0]?.toUpperCase() ?? '?'}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14 }}>{conv.buyer_name}</p>
-                        <p style={{ margin: 0, fontSize: 12, color: '#a0a0a0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.buyer_email}</p>
-                      </div>
-                      <p style={{ fontSize: 11, color: '#c0c0c0', flexShrink: 0 }}>{new Date(conv.created_at).toLocaleDateString()}</p>
-                    </div>
+              <div>
+                {/* Sub-tabs */}
+                <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1.5px solid #e8e8e8' }}>
+                  {([
+                    { key: 'received', label: 'Received', count: received.length },
+                    { key: 'sent',     label: 'Sent',     count: sent.length },
+                  ] as { key: MsgTab; label: string; count: number }[]).map(t => (
+                    <button key={t.key} onClick={() => setMsgTab(t.key)} style={{
+                      padding: '10px 20px',
+                      background: 'none', border: 'none',
+                      borderBottom: msgTab === t.key ? '2px solid #0a0a0a' : '2px solid transparent',
+                      marginBottom: -1.5,
+                      fontSize: 13, fontWeight: msgTab === t.key ? 700 : 500,
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      color: msgTab === t.key ? '#0a0a0a' : '#a0a0a0',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      {t.label}
+                      {t.count > 0 && (
+                        <span style={{
+                          background: msgTab === t.key ? '#0a0a0a' : '#e0e0e0',
+                          color: msgTab === t.key ? '#fff' : '#707070',
+                          fontSize: 11, fontWeight: 700,
+                          padding: '1px 7px', borderRadius: 100,
+                        }}>{t.count}</span>
+                      )}
+                    </button>
                   ))}
                 </div>
-              )
+
+                {msgTab === 'received' && (
+                  received.length === 0 ? (
+                    <EmptyState icon="📨" title="No messages received" sub="When buyers contact you about your listings, they'll appear here." />
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {received.map((conv: Conversation) => (
+                        <ConvRow key={conv.id} conv={conv} mode="received" />
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {msgTab === 'sent' && (
+                  sent.length === 0 ? (
+                    <EmptyState icon="📤" title="No messages sent" sub="When you contact sellers about listings, your messages will appear here." />
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {sent.map((conv: Conversation) => (
+                        <ConvRow key={conv.id} conv={conv} mode="sent" />
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
             )}
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function ConvRow({ conv, mode }: { conv: Conversation; mode: 'received' | 'sent' }) {
+  const name  = mode === 'received' ? conv.buyer_name  : conv.seller_name ?? 'Seller'
+  const email = mode === 'received' ? conv.buyer_email : conv.seller_email ?? ''
+  const label = mode === 'received' ? 'from' : 'to'
+
+  return (
+    <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 10, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0, color: '#0a0a0a' }}>
+        {(name?.[0] ?? '?').toUpperCase()}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14, color: '#0a0a0a' }}>{name}</p>
+        <p style={{ margin: 0, fontSize: 12, color: '#a0a0a0' }}>
+          <span style={{ fontWeight: 500, color: '#c0c0c0', marginRight: 4 }}>{label}</span>
+          {email}
+        </p>
+      </div>
+      {conv.message && (
+        <p style={{ maxWidth: 260, fontSize: 13, color: '#707070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+          {conv.message}
+        </p>
+      )}
+      <p style={{ fontSize: 11, color: '#c0c0c0', flexShrink: 0, marginLeft: 8 }}>
+        {new Date(conv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+      </p>
     </div>
   )
 }
