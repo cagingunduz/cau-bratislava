@@ -1,25 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import type { Listing, Conversation } from '@/types'
+import type { Listing, Conversation, ChatMessage } from '@/types'
 import { createClient } from '@/lib/auth'
 import SiteHeader from '@/components/SiteHeader'
 
-type Tab = 'listings' | 'favorites' | 'messages'
+type Tab    = 'listings' | 'favorites' | 'messages'
 type MsgTab = 'received' | 'sent'
+
+interface ConvWithMessages extends Conversation {
+  chat_messages?: ChatMessage[]
+  seller_name?: string
+  seller_email?: string
+}
 
 export default function AccountPage() {
   const router = useRouter()
-  const [user, setUser]                 = useState<User | null>(null)
-  const [tab, setTab]                   = useState<Tab>('listings')
-  const [msgTab, setMsgTab]             = useState<MsgTab>('received')
-  const [myListings, setMyListings]     = useState<Listing[]>([])
-  const [favorites, setFavorites]       = useState<Listing[]>([])
-  const [received, setReceived]         = useState<Conversation[]>([])
-  const [sent, setSent]                 = useState<Conversation[]>([])
-  const [loading, setLoading]           = useState(true)
+  const [user, setUser]             = useState<User | null>(null)
+  const [tab, setTab]               = useState<Tab>('listings')
+  const [msgTab, setMsgTab]         = useState<MsgTab>('received')
+  const [myListings, setMyListings] = useState<Listing[]>([])
+  const [favorites, setFavorites]   = useState<Listing[]>([])
+  const [received, setReceived]     = useState<ConvWithMessages[]>([])
+  const [sent, setSent]             = useState<ConvWithMessages[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [openConv, setOpenConv]     = useState<{ conv: ConvWithMessages; mode: MsgTab } | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -44,22 +51,22 @@ export default function AccountPage() {
       fetch(`/api/listings?user_id=${user.id}&all=true`).then(r => r.json()),
       Promise.resolve(db.from('favorites').select('listing_id').eq('user_id', user.id))
         .then(async ({ data: favData }: { data: { listing_id: string }[] | null }) => {
-          const ids = favData?.map(f => f.listing_id) ?? []
+          const ids = favData?.map((f: { listing_id: string }) => f.listing_id) ?? []
           if (!ids.length) return []
           return fetch(`/api/listings?ids=${ids.join(',')}&all=true`).then(r => r.json())
         }),
       Promise.resolve(
         db.from('conversations')
-          .select('*, listings!inner(seller_email)')
+          .select('*, listings!inner(seller_email), chat_messages(id,content,created_at,sender_email,sender_name)')
           .eq('listings.seller_email', user.email!)
           .order('created_at', { ascending: false })
-      ).then(({ data }: { data: Conversation[] | null }) => data ?? []),
+      ).then(({ data }: { data: ConvWithMessages[] | null }) => data ?? []),
       Promise.resolve(
         db.from('conversations')
-          .select('*, listings(seller_name, seller_email)')
+          .select('*, listings(seller_name, seller_email), chat_messages(id,content,created_at,sender_email,sender_name)')
           .eq('buyer_email', user.email!)
           .order('created_at', { ascending: false })
-      ).then(({ data }: { data: (Conversation & { listings?: { seller_name: string; seller_email: string } })[] | null }) =>
+      ).then(({ data }: { data: (ConvWithMessages & { listings?: { seller_name: string; seller_email: string } })[] | null }) =>
         (data ?? []).map(c => ({
           ...c,
           seller_name: c.listings?.seller_name,
@@ -89,13 +96,22 @@ export default function AccountPage() {
     setMyListings(p => p.filter(l => l.id !== id))
   }
 
+  function updateConvMessages(convId: string, msg: ChatMessage) {
+    const update = (list: ConvWithMessages[]) =>
+      list.map(c => c.id === convId ? { ...c, chat_messages: [...(c.chat_messages ?? []), msg] } : c)
+    setReceived(update)
+    setSent(update)
+    if (openConv?.conv.id === convId) {
+      setOpenConv(prev => prev ? { ...prev, conv: { ...prev.conv, chat_messages: [...(prev.conv.chat_messages ?? []), msg] } } : null)
+    }
+  }
+
   if (!user) return null
 
-  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+  const fullName    = user.user_metadata?.full_name || user.user_metadata?.name || ''
   const displayName = fullName || user.email?.split('@')[0] || 'User'
-  const initial = displayName[0].toUpperCase()
+  const initial     = displayName[0].toUpperCase()
   const totalMessages = received.length + sent.length
-
   const s = styles
 
   return (
@@ -105,22 +121,18 @@ export default function AccountPage() {
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px' }}>
         {/* Profile card */}
         <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 14, padding: '32px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: '#0a0a0a', color: '#fff',
-            fontSize: 26, fontWeight: 800,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, letterSpacing: '-.02em',
-          }}>{initial}</div>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#0a0a0a', color: '#fff', fontSize: 26, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {initial}
+          </div>
           <div>
             <p style={{ margin: '0 0 3px', fontSize: 20, fontWeight: 800, color: '#0a0a0a', letterSpacing: '-.02em' }}>{displayName}</p>
             <p style={{ margin: 0, fontSize: 13, color: '#a0a0a0' }}>{user.email}</p>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 32 }}>
             {[
-              { label: 'Listings',  value: myListings.length },
-              { label: 'Saved',     value: favorites.length },
-              { label: 'Messages',  value: totalMessages },
+              { label: 'Listings', value: myListings.length },
+              { label: 'Saved',    value: favorites.length },
+              { label: 'Messages', value: totalMessages },
             ].map(stat => (
               <div key={stat.label} style={{ textAlign: 'center' }}>
                 <p style={{ margin: '0 0 2px', fontSize: 24, fontWeight: 900, color: '#0a0a0a' }}>{stat.value}</p>
@@ -154,7 +166,6 @@ export default function AccountPage() {
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#a0a0a0' }}>Loading...</div>
         ) : (
           <>
-            {/* My Listings */}
             {tab === 'listings' && (
               myListings.length === 0 ? (
                 <EmptyState icon="🏷️" title="No listings yet" sub="Post your first item and reach hundreds of Erasmus students." />
@@ -189,7 +200,6 @@ export default function AccountPage() {
               )
             )}
 
-            {/* Favorites */}
             {tab === 'favorites' && (
               favorites.length === 0 ? (
                 <EmptyState icon="♡" title="No saved items" sub="Tap the heart on any listing to save it here." />
@@ -212,18 +222,15 @@ export default function AccountPage() {
               )
             )}
 
-            {/* Messages */}
             {tab === 'messages' && (
               <div>
-                {/* Sub-tabs */}
                 <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1.5px solid #e8e8e8' }}>
                   {([
                     { key: 'received', label: 'Received', count: received.length },
                     { key: 'sent',     label: 'Sent',     count: sent.length },
                   ] as { key: MsgTab; label: string; count: number }[]).map(t => (
                     <button key={t.key} onClick={() => setMsgTab(t.key)} style={{
-                      padding: '10px 20px',
-                      background: 'none', border: 'none',
+                      padding: '10px 20px', background: 'none', border: 'none',
                       borderBottom: msgTab === t.key ? '2px solid #0a0a0a' : '2px solid transparent',
                       marginBottom: -1.5,
                       fontSize: 13, fontWeight: msgTab === t.key ? 700 : 500,
@@ -233,74 +240,221 @@ export default function AccountPage() {
                     }}>
                       {t.label}
                       {t.count > 0 && (
-                        <span style={{
-                          background: msgTab === t.key ? '#0a0a0a' : '#e0e0e0',
-                          color: msgTab === t.key ? '#fff' : '#707070',
-                          fontSize: 11, fontWeight: 700,
-                          padding: '1px 7px', borderRadius: 100,
-                        }}>{t.count}</span>
+                        <span style={{ background: msgTab === t.key ? '#0a0a0a' : '#e0e0e0', color: msgTab === t.key ? '#fff' : '#707070', fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 100 }}>
+                          {t.count}
+                        </span>
                       )}
                     </button>
                   ))}
                 </div>
 
                 {msgTab === 'received' && (
-                  received.length === 0 ? (
-                    <EmptyState icon="📨" title="No messages received" sub="When buyers contact you about your listings, they'll appear here." />
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {received.map((conv: Conversation) => (
-                        <ConvRow key={conv.id} conv={conv} mode="received" />
-                      ))}
-                    </div>
-                  )
+                  received.length === 0
+                    ? <EmptyState icon="📨" title="No messages received" sub="When buyers contact you about your listings, they'll appear here." />
+                    : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {received.map(conv => (
+                          <ConvRow
+                            key={conv.id} conv={conv} mode="received"
+                            active={openConv?.conv.id === conv.id}
+                            onClick={() => setOpenConv(c => c?.conv.id === conv.id ? null : { conv, mode: 'received' })}
+                          />
+                        ))}
+                      </div>
                 )}
 
                 {msgTab === 'sent' && (
-                  sent.length === 0 ? (
-                    <EmptyState icon="📤" title="No messages sent" sub="When you contact sellers about listings, your messages will appear here." />
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {sent.map((conv: Conversation) => (
-                        <ConvRow key={conv.id} conv={conv} mode="sent" />
-                      ))}
-                    </div>
-                  )
+                  sent.length === 0
+                    ? <EmptyState icon="📤" title="No messages sent" sub="When you contact sellers about listings, your messages will appear here." />
+                    : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {sent.map(conv => (
+                          <ConvRow
+                            key={conv.id} conv={conv} mode="sent"
+                            active={openConv?.conv.id === conv.id}
+                            onClick={() => setOpenConv(c => c?.conv.id === conv.id ? null : { conv, mode: 'sent' })}
+                          />
+                        ))}
+                      </div>
                 )}
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Floating chat panel */}
+      {openConv && user && (
+        <ChatPanel
+          conv={openConv.conv}
+          mode={openConv.mode}
+          currentUser={user}
+          onClose={() => setOpenConv(null)}
+          onNewMessage={msg => updateConvMessages(openConv.conv.id, msg)}
+        />
+      )}
     </div>
   )
 }
 
-function ConvRow({ conv, mode }: { conv: Conversation; mode: 'received' | 'sent' }) {
-  const name  = mode === 'received' ? conv.buyer_name  : conv.seller_name ?? 'Seller'
-  const email = mode === 'received' ? conv.buyer_email : conv.seller_email ?? ''
+/* ─── Conversation row ─── */
+function ConvRow({ conv, mode, active, onClick }: {
+  conv: ConvWithMessages
+  mode: MsgTab
+  active: boolean
+  onClick: () => void
+}) {
+  const name  = mode === 'received' ? conv.buyer_name  : (conv.seller_name ?? 'Seller')
+  const email = mode === 'received' ? conv.buyer_email : (conv.seller_email ?? '')
   const label = mode === 'received' ? 'from' : 'to'
 
+  const msgs   = conv.chat_messages ?? []
+  const last   = msgs.length ? msgs.reduce((a, b) => a.created_at > b.created_at ? a : b) : null
+  const preview = last?.content ?? ''
+
   return (
-    <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 10, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0, color: '#0a0a0a' }}>
+    <div
+      onClick={onClick}
+      style={{
+        background: active ? '#f7f7f7' : '#fff',
+        border: `1.5px solid ${active ? '#0a0a0a' : '#e0e0e0'}`,
+        borderRadius: 10, padding: '16px 20px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        cursor: 'pointer', transition: 'border-color .15s, background .15s',
+      }}
+      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.borderColor = '#c0c0c0' }}
+      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.borderColor = '#e0e0e0' }}
+    >
+      <div style={{ width: 42, height: 42, borderRadius: '50%', background: active ? '#0a0a0a' : '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, color: active ? '#fff' : '#0a0a0a', transition: 'background .15s, color .15s' }}>
         {(name?.[0] ?? '?').toUpperCase()}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14, color: '#0a0a0a' }}>{name}</p>
-        <p style={{ margin: 0, fontSize: 12, color: '#a0a0a0' }}>
-          <span style={{ fontWeight: 500, color: '#c0c0c0', marginRight: 4 }}>{label}</span>
-          {email}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: '#c0c0c0', textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: '#0a0a0a' }}>{name}</span>
+          <span style={{ fontSize: 12, color: '#b0b0b0' }}>{email}</span>
+        </div>
+        {preview && (
+          <p style={{ margin: 0, fontSize: 13, color: '#707070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {preview}
+          </p>
+        )}
       </div>
-      {conv.message && (
-        <p style={{ maxWidth: 260, fontSize: 13, color: '#707070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
-          {conv.message}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+        <p style={{ margin: 0, fontSize: 11, color: '#c0c0c0' }}>
+          {new Date(last?.created_at ?? conv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </p>
-      )}
-      <p style={{ fontSize: 11, color: '#c0c0c0', flexShrink: 0, marginLeft: 8 }}>
-        {new Date(conv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-      </p>
+        {msgs.length > 0 && (
+          <span style={{ fontSize: 11, color: '#a0a0a0' }}>{msgs.length} msg{msgs.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Floating chat panel ─── */
+function ChatPanel({ conv, mode, currentUser, onClose, onNewMessage }: {
+  conv: ConvWithMessages
+  mode: MsgTab
+  currentUser: User
+  onClose: () => void
+  onNewMessage: (msg: ChatMessage) => void
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    [...(conv.chat_messages ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
+  )
+  const [input, setInput]   = useState('')
+  const [sending, setSending] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const partnerName  = mode === 'received' ? conv.buyer_name        : (conv.seller_name  ?? 'Seller')
+  const partnerEmail = mode === 'received' ? conv.buyer_email       : (conv.seller_email ?? '')
+  const myName       = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Me'
+  const myEmail      = currentUser.email ?? ''
+
+  async function send(e: React.FormEvent) {
+    e.preventDefault()
+    const content = input.trim()
+    if (!content || sending) return
+    setSending(true)
+    setInput('')
+
+    const res = await fetch(`/api/conversations/${conv.id}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender_email: myEmail, sender_name: myName, content }),
+    })
+    setSending(false)
+    if (!res.ok) return
+    const msg: ChatMessage = await res.json()
+    setMessages(p => [...p, msg])
+    onNewMessage(msg)
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24, zIndex: 400,
+      width: 360, maxHeight: 480,
+      background: '#fff', borderRadius: 14,
+      border: '1.5px solid #e0e0e0',
+      boxShadow: '0 8px 40px rgba(0,0,0,.18)',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{ background: '#0a0a0a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+          {(partnerName[0] ?? '?').toUpperCase()}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partnerName}</p>
+          <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{partnerEmail}</p>
+        </div>
+        <button onClick={onClose} style={{ background: 'rgba(255,255,255,.1)', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', color: 'rgba(255,255,255,.7)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 8px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
+        {messages.length === 0 && (
+          <p style={{ textAlign: 'center', color: '#c0c0c0', fontSize: 13, margin: 'auto' }}>No messages yet</p>
+        )}
+        {messages.map(msg => {
+          const isMe = msg.sender_email === myEmail
+          return (
+            <div key={msg.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 6 }}>
+              <div style={{
+                maxWidth: '78%', padding: '9px 13px',
+                background: isMe ? '#0a0a0a' : '#f2f2f2',
+                color: isMe ? '#fff' : '#0a0a0a',
+                borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                fontSize: 13, lineHeight: 1.4,
+              }}>
+                {msg.content}
+              </div>
+            </div>
+          )
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <form onSubmit={send} style={{ padding: '10px 12px', borderTop: '1px solid #f0f0f0', display: 'flex', gap: 8 }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Type a message..."
+          style={{ flex: 1, padding: '9px 12px', border: '1.5px solid #e0e0e0', borderRadius: 20, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fafafa' }}
+          onFocus={e => (e.currentTarget.style.borderColor = '#0a0a0a')}
+          onBlur={e => (e.currentTarget.style.borderColor = '#e0e0e0')}
+        />
+        <button
+          type="submit"
+          disabled={!input.trim() || sending}
+          style={{ padding: '9px 14px', background: '#0a0a0a', color: '#fff', border: 'none', borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: input.trim() ? 'pointer' : 'default', fontFamily: 'inherit', opacity: input.trim() ? 1 : .4, transition: 'opacity .15s' }}
+        >→</button>
+      </form>
     </div>
   )
 }
