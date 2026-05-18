@@ -60,6 +60,9 @@ export interface Conversation {
   listing_id: string
   buyer_email: string
   buyer_name: string
+  message?: string
+  seller_name?: string
+  seller_email?: string
 }
 
 export interface ChatMessage {
