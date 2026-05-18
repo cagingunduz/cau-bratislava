@@ -2,12 +2,12 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/auth'
 
-interface Props { onClose: () => void }
-
 type Mode = 'signin' | 'signup'
 
-export default function AuthModal({ onClose }: Props) {
-  const [mode, setMode]         = useState<Mode>('signin')
+interface Props { onClose: () => void; initialMode?: Mode }
+
+export default function AuthModal({ onClose, initialMode = 'signin' }: Props) {
+  const [mode, setMode]         = useState<Mode>(initialMode)
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
