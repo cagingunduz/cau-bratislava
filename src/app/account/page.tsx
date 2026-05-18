@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import type { Listing, Conversation, ChatMessage } from '@/types'
 import { createClient } from '@/lib/auth'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import SiteHeader from '@/components/SiteHeader'
 
 type Tab    = 'listings' | 'favorites' | 'messages'
@@ -27,6 +28,7 @@ export default function AccountPage() {
   const [sent, setSent]             = useState<ConvWithMessages[]>([])
   const [loading, setLoading]       = useState(true)
   const [openConv, setOpenConv]     = useState<{ conv: ConvWithMessages; mode: MsgTab } | null>(null)
+  const isMobile = useMediaQuery('(max-width: 720px)')
 
   useEffect(() => {
     const supabase = createClient()
@@ -119,17 +121,33 @@ export default function AccountPage() {
     <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: 'inherit' }}>
       <SiteHeader />
 
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: isMobile ? '28px 16px 56px' : '40px 24px' }}>
         {/* Profile card */}
-        <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 14, padding: '32px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div style={{
+          background: '#fff',
+          border: '1.5px solid #e0e0e0',
+          borderRadius: 14,
+          padding: isMobile ? 20 : 32,
+          marginBottom: isMobile ? 22 : 32,
+          display: 'flex',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: isMobile ? 16 : 20,
+          flexDirection: isMobile ? 'column' : 'row',
+        }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#0a0a0a', color: '#fff', fontSize: 26, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {initial}
           </div>
-          <div>
-            <p style={{ margin: '0 0 3px', fontSize: 20, fontWeight: 800, color: '#0a0a0a', letterSpacing: '-.02em' }}>{displayName}</p>
-            <p style={{ margin: 0, fontSize: 13, color: '#a0a0a0' }}>{user.email}</p>
+          <div style={{ minWidth: 0, width: isMobile ? '100%' : 'auto' }}>
+            <p style={{ margin: '0 0 3px', fontSize: 20, fontWeight: 800, color: '#0a0a0a', letterSpacing: '-.02em', overflowWrap: 'anywhere' }}>{displayName}</p>
+            <p style={{ margin: 0, fontSize: 13, color: '#a0a0a0', overflowWrap: 'anywhere' }}>{user.email}</p>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 32 }}>
+          <div style={{
+            marginLeft: isMobile ? 0 : 'auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: isMobile ? 10 : 32,
+            width: isMobile ? '100%' : 'auto',
+          }}>
             {[
               { label: 'Listings', value: myListings.length },
               { label: 'Saved',    value: favorites.length },
@@ -144,14 +162,14 @@ export default function AccountPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 28, background: '#f0f0f0', borderRadius: 10, padding: 4 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: isMobile ? 20 : 28, background: '#f0f0f0', borderRadius: 10, padding: 4, overflowX: 'auto', scrollbarWidth: 'none' }}>
           {([
             { key: 'listings',  label: 'My Listings' },
             { key: 'favorites', label: 'Saved' },
             { key: 'messages',  label: 'Messages' },
           ] as { key: Tab; label: string }[]).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
-              flex: 1, padding: '10px',
+              flex: isMobile ? '0 0 auto' : 1, padding: '10px 14px',
               background: tab === t.key ? '#fff' : 'none',
               border: 'none', borderRadius: 7,
               fontSize: 13, fontWeight: 600,
@@ -225,7 +243,7 @@ export default function AccountPage() {
 
             {tab === 'messages' && (
               <div>
-                <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1.5px solid #e8e8e8' }}>
+                <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1.5px solid #e8e8e8', overflowX: 'auto', scrollbarWidth: 'none' }}>
                   {([
                     { key: 'received', label: 'Received', count: received.length },
                     { key: 'sent',     label: 'Sent',     count: sent.length },
@@ -290,6 +308,7 @@ export default function AccountPage() {
           currentUser={user}
           onClose={() => setOpenConv(null)}
           onNewMessage={msg => updateConvMessages(openConv.conv.id, msg)}
+          isMobile={isMobile}
         />
       )}
     </div>
@@ -303,6 +322,7 @@ function ConvRow({ conv, mode, active, onClick }: {
   active: boolean
   onClick: () => void
 }) {
+  const isMobile = useMediaQuery('(max-width: 720px)')
   const name  = mode === 'received' ? conv.buyer_name  : (conv.seller_name ?? 'Seller')
   const email = mode === 'received' ? conv.buyer_email : (conv.seller_email ?? '')
   const label = mode === 'received' ? 'from' : 'to'
@@ -317,8 +337,9 @@ function ConvRow({ conv, mode, active, onClick }: {
       style={{
         background: active ? '#f7f7f7' : '#fff',
         border: `1.5px solid ${active ? '#0a0a0a' : '#e0e0e0'}`,
-        borderRadius: 10, padding: '16px 20px',
-        display: 'flex', alignItems: 'center', gap: 14,
+        borderRadius: 10, padding: isMobile ? 14 : '16px 20px',
+        display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: 12,
+        flexDirection: isMobile ? 'column' : 'row',
         cursor: 'pointer', transition: 'border-color .15s, background .15s',
       }}
       onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.borderColor = '#c0c0c0' }}
@@ -327,11 +348,11 @@ function ConvRow({ conv, mode, active, onClick }: {
       <div style={{ width: 42, height: 42, borderRadius: '50%', background: active ? '#0a0a0a' : '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, color: active ? '#fff' : '#0a0a0a', transition: 'background .15s, color .15s' }}>
         {(name?.[0] ?? '?').toUpperCase()}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+      <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto' }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, fontWeight: 500, color: '#c0c0c0', textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</span>
-          <span style={{ fontWeight: 700, fontSize: 14, color: '#0a0a0a' }}>{name}</span>
-          <span style={{ fontSize: 12, color: '#b0b0b0' }}>{email}</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: '#0a0a0a', overflowWrap: 'anywhere' }}>{name}</span>
+          <span style={{ fontSize: 12, color: '#b0b0b0', overflowWrap: 'anywhere' }}>{email}</span>
         </div>
         {preview && (
           <p style={{ margin: 0, fontSize: 13, color: '#707070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -339,7 +360,7 @@ function ConvRow({ conv, mode, active, onClick }: {
           </p>
         )}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'flex-end', gap: 8, flexShrink: 0, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
         <p style={{ margin: 0, fontSize: 11, color: '#c0c0c0' }}>
           {new Date(last?.created_at ?? conv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </p>
@@ -352,12 +373,13 @@ function ConvRow({ conv, mode, active, onClick }: {
 }
 
 /* ─── Floating chat panel ─── */
-function ChatPanel({ conv, mode, currentUser, onClose, onNewMessage }: {
+function ChatPanel({ conv, mode, currentUser, onClose, onNewMessage, isMobile }: {
   conv: ConvWithMessages
   mode: MsgTab
   currentUser: User
   onClose: () => void
   onNewMessage: (msg: ChatMessage) => void
+  isMobile: boolean
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(
     [...(conv.chat_messages ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
@@ -396,8 +418,8 @@ function ChatPanel({ conv, mode, currentUser, onClose, onNewMessage }: {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, right: 24, zIndex: 400,
-      width: 360, maxHeight: 480,
+      position: 'fixed', bottom: isMobile ? 10 : 24, right: isMobile ? 10 : 24, left: isMobile ? 10 : 'auto', zIndex: 400,
+      width: isMobile ? 'auto' : 360, maxHeight: isMobile ? 'calc(100vh - 20px)' : 480,
       background: '#fff', borderRadius: 14,
       border: '1.5px solid #e0e0e0',
       boxShadow: '0 8px 40px rgba(0,0,0,.18)',
@@ -471,7 +493,7 @@ function EmptyState({ icon, title, sub }: { icon: string; title: string; sub: st
 }
 
 const styles = {
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 16 } as React.CSSProperties,
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(220px,100%),1fr))', gap: 16 } as React.CSSProperties,
   card: { background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 10, overflow: 'hidden' } as React.CSSProperties,
   img: { width: '100%', height: 160, objectFit: 'cover' as const, display: 'block' },
   imgFallback: { width: '100%', height: 160, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, opacity: .4 } as React.CSSProperties,
