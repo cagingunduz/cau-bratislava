@@ -116,7 +116,7 @@ export default function SiteHeader() {
                     >
                       <div style={{
                         width: 28, height: 28, borderRadius: '50%',
-                        background: '#7c3aed', color: '#fff',
+                        background: '#0a0a0a', color: '#fff',
                         fontSize: 12, fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0,
@@ -166,7 +166,7 @@ export default function SiteHeader() {
                 >Log in</button>
                 <button
                   onClick={() => { setAuthOpen(true); setSignupMode(true) }}
-                  style={{ padding: '8px 16px', background: '#7c3aed', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: '#fff', transition: 'opacity .18s' }}
+                  style={{ padding: '8px 16px', background: '#0a0a0a', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: '#fff', transition: 'opacity .18s' }}
                   onMouseEnter={e => (e.currentTarget.style.opacity = '.85')}
                   onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                 >Sign up</button>
