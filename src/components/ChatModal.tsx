@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/auth'
 import type { Listing, ChatMessage } from '@/types'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 interface Props {
   listing: Listing
@@ -17,6 +18,7 @@ export default function ChatModal({ listing, currentEmail, currentName, onClose 
   const [loading, setLoading]               = useState(true)
   const [sending, setSending]               = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const isMobile = useMediaQuery('(max-width: 560px)')
 
   // Load or create conversation
   useEffect(() => {
@@ -88,15 +90,15 @@ export default function ChatModal({ listing, currentEmail, currentName, onClose 
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 500, display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', padding: isMobile ? 10 : 20 }}
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 500, maxHeight: '85vh', display: 'flex', flexDirection: 'column', position: 'relative' }}
+        style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 500, maxHeight: isMobile ? 'calc(100vh - 20px)' : '85vh', display: 'flex', flexDirection: 'column', position: 'relative' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ padding: isMobile ? '16px' : '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 12 }}>
           {listing.image_url && (
             <img src={listing.image_url} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
           )}
@@ -108,7 +110,7 @@ export default function ChatModal({ listing, currentEmail, currentName, onClose 
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 16px' : '16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {loading ? (
             <p style={{ textAlign: 'center', color: '#a0a0a0', fontSize: 13 }}>Loading...</p>
           ) : messages.length === 0 ? (
@@ -119,7 +121,7 @@ export default function ChatModal({ listing, currentEmail, currentName, onClose 
               return (
                 <div key={msg.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 8 }}>
                   <div style={{
-                    maxWidth: '72%', padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    maxWidth: isMobile ? '86%' : '72%', padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                     background: isMe ? '#0a0a0a' : '#f0f0f0', color: isMe ? '#fff' : '#0a0a0a',
                     fontSize: 14, lineHeight: 1.5,
                   }}>
@@ -134,7 +136,7 @@ export default function ChatModal({ listing, currentEmail, currentName, onClose 
         </div>
 
         {/* Input */}
-        <form onSubmit={send} style={{ padding: '16px 24px', borderTop: '1px solid #f0f0f0', display: 'flex', gap: 10 }}>
+        <form onSubmit={send} style={{ padding: isMobile ? '12px' : '16px 24px', borderTop: '1px solid #f0f0f0', display: 'flex', gap: 10 }}>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}

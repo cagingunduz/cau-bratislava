@@ -1,7 +1,9 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 interface Props {
   user?: User | null
@@ -20,6 +22,7 @@ export default function SiteHeader({ user, onSignIn, onSignOut }: Props) {
   const pathname  = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef   = useRef<HTMLDivElement>(null)
+  const isMobile = useMediaQuery('(max-width: 680px)')
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -43,33 +46,42 @@ export default function SiteHeader({ user, onSignIn, onSignOut }: Props) {
       <div style={{
         maxWidth: 1100,
         margin: '0 auto',
-        padding: '0 28px',
-        height: 60,
+        padding: isMobile ? '0 16px' : '0 28px',
+        minHeight: 60,
         display: 'flex',
         alignItems: 'center',
-        gap: 36,
+        gap: isMobile ? 14 : 36,
+        flexWrap: isMobile ? 'wrap' : 'nowrap',
       }}>
         {/* Logo */}
-        <a href="/" style={{
+        <Link href="/" style={{
           fontFamily: "'Bebas Neue',sans-serif",
           fontSize: 24,
           letterSpacing: '.1em',
           color: '#0a0a0a',
           textDecoration: 'none',
           flexShrink: 0,
-        }}>ČAU</a>
+        }}>ČAU</Link>
 
         {/* Nav */}
-        <nav style={{ display: 'flex', alignItems: 'center' }}>
+        <nav style={{
+          display: 'flex',
+          alignItems: 'center',
+          order: isMobile ? 3 : 0,
+          width: isMobile ? '100%' : 'auto',
+          overflowX: isMobile ? 'auto' : 'visible',
+          paddingBottom: isMobile ? 10 : 0,
+          scrollbarWidth: 'none',
+        }}>
           {NAV.map(({ label, href }) => {
             const active = isActive(href)
             return (
-              <a
+              <Link
                 key={href}
                 href={href}
                 style={{
                   padding: '6px 14px',
-                  fontSize: 14,
+                  fontSize: isMobile ? 13 : 14,
                   fontWeight: active ? 600 : 400,
                   color: active ? '#0a0a0a' : '#888',
                   textDecoration: active ? 'underline' : 'none',
@@ -79,13 +91,13 @@ export default function SiteHeader({ user, onSignIn, onSignOut }: Props) {
                 }}
                 onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = '#0a0a0a' }}
                 onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = '#888' }}
-              >{label}</a>
+              >{label}</Link>
             )
           })}
         </nav>
 
         {/* Right: avatar */}
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', padding: isMobile ? '12px 0' : 0 }}>
           {user ? (
             <div ref={menuRef} style={{ position: 'relative' }}>
               <button
@@ -109,13 +121,13 @@ export default function SiteHeader({ user, onSignIn, onSignOut }: Props) {
                   <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid #f0f0f0', marginBottom: 4 }}>
                     <p style={{ margin: 0, fontSize: 12, color: '#707070' }}>{user.email}</p>
                   </div>
-                  <a
+                  <Link
                     href="/account"
                     onClick={() => setMenuOpen(false)}
                     style={{ display: 'block', padding: '8px 12px', fontSize: 13, color: '#0a0a0a', borderRadius: 4, textDecoration: 'none' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#f7f7f7')}
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
-                  >My account</a>
+                  >My account</Link>
                   <button
                     onClick={() => { setMenuOpen(false); onSignOut?.() }}
                     style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#888', borderRadius: 4, fontFamily: 'inherit' }}

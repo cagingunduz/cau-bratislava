@@ -1,5 +1,6 @@
 'use client'
 import type { Listing } from '@/types'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import ListingCard from './ListingCard'
 
 const CATEGORIES = [
@@ -38,12 +39,14 @@ export default function ListingsSection({
   onCategoryChange, onMaxPriceChange, onShowSoldChange,
   onContact, onChat, onToggleFavorite, onMarkSold, onDelete, onMapOpen,
 }: Props) {
+  const isMobile = useMediaQuery('(max-width: 720px)')
+
   return (
-    <section id="listings" style={{ padding: '64px 0' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px' }}>
+    <section id="listings" style={{ padding: isMobile ? '36px 0 48px' : '64px 0' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? 0 : '0 28px' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
           <h2 style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 'clamp(32px,4vw,44px)', letterSpacing: '.04em' }}>Browse listings</h2>
           <button
             onClick={onMapOpen}
@@ -57,7 +60,16 @@ export default function ListingsSection({
         </div>
 
         {/* Category tabs */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #efefef' }}>
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          flexWrap: isMobile ? 'nowrap' : 'wrap',
+          overflowX: isMobile ? 'auto' : 'visible',
+          marginBottom: 24,
+          paddingBottom: 24,
+          borderBottom: '1px solid #efefef',
+          scrollbarWidth: 'none',
+        }}>
           {CATEGORIES.map(cat => (
             <button key={cat.key} onClick={() => onCategoryChange(cat.key)} style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -65,7 +77,7 @@ export default function ListingsSection({
               color: category === cat.key ? '#fff' : '#707070',
               background: category === cat.key ? '#0a0a0a' : '#fff',
               border: `1.5px solid ${category === cat.key ? '#0a0a0a' : '#e0e0e0'}`,
-              borderRadius: 100, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .22s',
+              borderRadius: 100, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .22s', whiteSpace: 'nowrap', flexShrink: 0,
             }}>
               {cat.label}
             </button>
@@ -73,13 +85,13 @@ export default function ListingsSection({
         </div>
 
         {/* Filters row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', gap: 16, marginBottom: 28, flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: isMobile ? '100%' : 'auto' }}>
             <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#a0a0a0' }}>Max price</label>
             <select
               value={maxPrice}
               onChange={e => onMaxPriceChange(e.target.value)}
-              style={{ padding: '8px 28px 8px 12px', fontSize: 13, fontWeight: 500, border: '1.5px solid #e0e0e0', borderRadius: 6, background: '#fff', color: '#0a0a0a', outline: 'none', cursor: 'pointer', fontFamily: 'inherit', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+              style={{ padding: '8px 28px 8px 12px', fontSize: 13, fontWeight: 500, border: '1.5px solid #e0e0e0', borderRadius: 6, background: '#fff', color: '#0a0a0a', outline: 'none', cursor: 'pointer', fontFamily: 'inherit', appearance: 'none', backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', width: isMobile ? '100%' : 'auto' }}
             >
               <option value="all">Any price</option>
               <option value="10">Under €10</option>
@@ -107,14 +119,14 @@ export default function ListingsSection({
             <span style={{ fontSize: 13, fontWeight: 500, color: '#707070' }}>Show sold</span>
           </label>
 
-          <div style={{ marginLeft: 'auto', fontSize: 13, color: '#a0a0a0', fontWeight: 500 }}>
+          <div style={{ marginLeft: isMobile ? 0 : 'auto', fontSize: 13, color: '#a0a0a0', fontWeight: 500 }}>
             {loading ? 'Loading...' : `${listings.length} item${listings.length !== 1 ? 's' : ''} found`}
           </div>
         </div>
 
         {/* Grid */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} style={{ height: 400, background: '#f7f7f7', borderRadius: 12, animation: 'pulse 1.5s infinite' }} />
             ))}
@@ -126,7 +138,7 @@ export default function ListingsSection({
             <p style={{ fontSize: 14, marginTop: 8 }}>Try a different category or price range.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
             {listings.map(l => (
               <ListingCard
                 key={l.id}

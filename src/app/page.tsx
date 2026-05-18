@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import type { Listing } from '@/types'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/auth'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import SiteHeader from '@/components/SiteHeader'
 import Footer from '@/components/Footer'
 import ListingsSection from '@/components/ListingsSection'
@@ -31,6 +32,7 @@ export default function Home() {
   const [toast, setToast]               = useState<string | null>(null)
   const [user, setUser]                 = useState<User | null>(null)
   const [favoriteIds, setFavoriteIds]   = useState<Set<string>>(new Set())
+  const isMobile = useMediaQuery('(max-width: 720px)')
 
   function showToast(msg: string) {
     setToast(msg)
@@ -53,6 +55,7 @@ export default function Home() {
 
   // Load favorites when user logs in
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!user) { setFavoriteIds(new Set()); return }
     const supabase = createClient()
     Promise.resolve(supabase.from('favorites').select('listing_id').eq('user_id', user.id))
@@ -75,7 +78,10 @@ export default function Home() {
     finally  { setLoading(false) }
   }, [category, maxPrice, searchQ, showSold])
 
-  useEffect(() => { fetchListings() }, [fetchListings])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchListings()
+  }, [fetchListings])
 
   async function handleSell(body: Record<string, unknown>) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -121,7 +127,8 @@ export default function Home() {
 
     setFavoriteIds(prev => {
       const next = new Set(prev)
-      isFav ? next.delete(listing.id) : next.add(listing.id)
+      if (isFav) next.delete(listing.id)
+      else next.add(listing.id)
       return next
     })
 
@@ -170,15 +177,15 @@ export default function Home() {
       <SiteHeader user={user} onSignIn={() => setAuthOpen(true)} onSignOut={handleSignOut} />
       <main style={{ minHeight: '100vh', background: '#fafafa' }}>
         {/* Marketplace header */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #efefef', padding: '32px 0 0' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px 24px', display: 'flex', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1 }}>
+        <div style={{ background: '#fff', borderBottom: '1px solid #efefef', padding: isMobile ? '24px 0 0' : '32px 0 0' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px 20px' : '0 28px 24px', display: 'flex', alignItems: isMobile ? 'stretch' : 'flex-end', gap: 16, flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a0a0a0' }}>Bratislava · Erasmus</p>
               <h1 style={{ margin: 0, fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 400, letterSpacing: '-.01em' }}>Second-hand marketplace</h1>
             </div>
-            <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row', flexShrink: 0, width: isMobile ? '100%' : 'auto' }}>
               {/* Search */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f7f7f7', border: '1.5px solid #e0e0e0', borderRadius: 8, padding: '9px 14px', minWidth: 260 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f7f7f7', border: '1.5px solid #e0e0e0', borderRadius: 8, padding: '9px 14px', minWidth: isMobile ? 0 : 260, width: isMobile ? '100%' : 'auto' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a0a0a0" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                 <input
                   onChange={e => {
@@ -192,13 +199,13 @@ export default function Home() {
               </div>
               <button
                 onClick={() => setSellOpen(true)}
-                style={{ background: '#0a0a0a', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                style={{ background: '#0a0a0a', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', width: isMobile ? '100%' : 'auto' }}
               >+ List item</button>
             </div>
           </div>
         </div>
 
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px' }}>
           <ListingsSection
             listings={listings}
             loading={loading}

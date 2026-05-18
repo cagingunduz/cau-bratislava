@@ -2,8 +2,17 @@
 import { useState } from 'react'
 import SiteHeader from '@/components/SiteHeader'
 import Footer from '@/components/Footer'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 type Step = 'form' | 'confirmed'
+type StorageForm = {
+  items: string
+  dropoff: string
+  pickup: string
+  warehouse: string
+  name: string
+  email: string
+}
 
 const WAREHOUSES = ['Petržalka', 'Ružinov', 'Staré Mesto']
 
@@ -18,6 +27,7 @@ export default function StoragePage() {
     email: '',
   })
   const [bookingNum] = useState(() => `2026-${Math.floor(100 + Math.random() * 900)}`)
+  const isMobile = useMediaQuery('(max-width: 760px)')
 
   function set(k: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -40,7 +50,7 @@ export default function StoragePage() {
     <div style={{ minHeight: '100vh', background: '#fafafa', fontFamily: 'inherit' }}>
       <SiteHeader />
 
-      <div style={{ maxWidth: 820, margin: '0 auto', padding: '48px 28px 80px' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: isMobile ? '32px 16px 56px' : '48px 28px 80px' }}>
         <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a0a0a0' }}>Going home?</p>
         <h1 style={{ margin: '0 0 8px', fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 400 }}>
           Your storage booking
@@ -52,11 +62,13 @@ export default function StoragePage() {
             form={form} set={set} days={days} price={price}
             inputStyle={inputStyle} warehouses={WAREHOUSES}
             onSubmit={() => setStep('confirmed')}
+            isMobile={isMobile}
           />
         ) : (
           <BookingConfirmed
             form={form} bookingNum={bookingNum} days={days!} price={price!}
             onNew={() => setStep('form')}
+            isMobile={isMobile}
           />
         )}
       </div>
@@ -66,14 +78,15 @@ export default function StoragePage() {
   )
 }
 
-function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit }: {
-  form: Record<string, string>
-  set: (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit, isMobile }: {
+  form: StorageForm
+  set: (k: keyof StorageForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
   days: number | null
   price: number | null
   inputStyle: React.CSSProperties
   warehouses: string[]
   onSubmit: () => void
+  isMobile: boolean
 }) {
   function handle(e: React.FormEvent) {
     e.preventDefault()
@@ -81,7 +94,7 @@ function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit 
   }
 
   return (
-    <form onSubmit={handle} style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 28, alignItems: 'start' }}>
+    <form onSubmit={handle} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: 28, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
           <label style={labelStyle}>Your name</label>
@@ -91,7 +104,7 @@ function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit 
           <label style={labelStyle}>Email</label>
           <input required type="email" style={inputStyle} placeholder="alex@uni.de" value={form.email} onChange={set('email')} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
           <div>
             <label style={labelStyle}>Drop-off date</label>
             <input required type="date" style={inputStyle} value={form.dropoff} onChange={set('dropoff')} />
@@ -117,7 +130,7 @@ function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit 
       </div>
 
       {/* Price card */}
-      <div style={{ background: '#0a0a0a', color: '#fff', borderRadius: 12, padding: '28px 24px', position: 'sticky', top: 80 }}>
+      <div style={{ background: '#0a0a0a', color: '#fff', borderRadius: 12, padding: '28px 24px', position: isMobile ? 'static' : 'sticky', top: 80 }}>
         <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)' }}>Total</p>
         <p style={{ margin: '0 0 4px', fontSize: 48, fontWeight: 800, lineHeight: 1 }}>
           {price != null ? `€${price}` : '—'}
@@ -142,21 +155,22 @@ function BookingForm({ form, set, days, price, inputStyle, warehouses, onSubmit 
   )
 }
 
-function BookingConfirmed({ form, bookingNum, days, price, onNew }: {
-  form: Record<string, string>
+function BookingConfirmed({ form, bookingNum, days, price, onNew, isMobile }: {
+  form: StorageForm
   bookingNum: string
   days: number
   price: number
   onNew: () => void
+  isMobile: boolean
 }) {
   const dropDate = new Date(form.dropoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   const pickDate = new Date(form.pickup).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 28, alignItems: 'start' }}>
-      <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 14, padding: '32px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: 28, alignItems: 'start' }}>
+      <div style={{ background: '#fff', border: '1.5px solid #e0e0e0', borderRadius: 14, padding: isMobile ? 20 : 32, display: 'flex', flexDirection: 'column', gap: 28 }}>
         {/* Booking header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'flex-start', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
           <div>
             <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a0a0a0' }}>BOOKING #{bookingNum}</p>
             <p style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Summer 2026</p>
@@ -190,7 +204,7 @@ function BookingConfirmed({ form, bookingNum, days, price, onNew }: {
             ['Duration', `${days} days`],
             ['Contact', form.email],
           ].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 14, flexDirection: isMobile ? 'column' : 'row' }}>
               <span style={{ color: '#888' }}>{k}</span>
               <span style={{ fontWeight: 600 }}>{v}</span>
             </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import type { Listing, Conversation } from '@/types'
@@ -33,6 +34,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!user) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     const supabase = createClient()
 
@@ -88,12 +90,12 @@ export default function AccountPage() {
       {/* Header */}
       <header style={{ background: '#fff', borderBottom: '1px solid #e0e0e0', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
             <div style={{ width: 32, height: 32 }}><Logo /></div>
             <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: '.05em', color: '#0a0a0a' }}>Čau Bratislava</span>
-          </a>
+          </Link>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <a href="/" style={{ fontSize: 13, fontWeight: 500, color: '#707070', textDecoration: 'none' }}>← Back to listings</a>
+            <Link href="/" style={{ fontSize: 13, fontWeight: 500, color: '#707070', textDecoration: 'none' }}>← Back to listings</Link>
             <button onClick={handleSignOut} style={{ padding: '7px 14px', background: 'none', border: '1.5px solid #e0e0e0', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', color: '#707070' }}>Sign out</button>
           </div>
         </div>
@@ -194,7 +196,7 @@ export default function AccountPage() {
                       <div style={{ padding: '14px 16px' }}>
                         <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14 }}>{l.title}</p>
                         <p style={{ margin: '0 0 8px', fontSize: 13, color: '#a0a0a0' }}>€{l.price} · {l.seller_name}</p>
-                        <a href="/" style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', textDecoration: 'none' }}>View listing →</a>
+                        <Link href="/" style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', textDecoration: 'none' }}>View listing →</Link>
                       </div>
                     </div>
                   ))}

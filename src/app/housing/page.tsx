@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import SiteHeader from '@/components/SiteHeader'
 import Footer from '@/components/Footer'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const FLATS = [
   { id: '1', title: 'Cozy studio · Old Town', area: '25 m²  ·  all bills included', price: 450, type: 'studio', location: 'Old Town', photos: 3, rating: 5, students: 12, color: '#c9b99a' },
@@ -22,6 +23,7 @@ const FILTERS = [
 
 export default function HousingPage() {
   const [active, setActive] = useState('all')
+  const isMobile = useMediaQuery('(max-width: 720px)')
 
   const filtered = FLATS.filter(f => {
     if (active === 'all')    return true
@@ -35,8 +37,8 @@ export default function HousingPage() {
       <SiteHeader />
 
       {/* Page header */}
-      <div style={{ background: '#f8f6f2', padding: '48px 0 0' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px 32px' }}>
+      <div style={{ background: '#f8f6f2', padding: isMobile ? '32px 0 0' : '48px 0 0' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px 28px' : '0 28px 32px' }}>
           <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a0a0a0' }}>Bratislava · Verified</p>
           <h1 style={{ margin: '0 0 24px', fontFamily: "'Lora',Georgia,serif", fontStyle: 'italic', fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 400 }}>
             Verified flats in Bratislava
@@ -44,7 +46,7 @@ export default function HousingPage() {
           <p style={{ margin: '0 0 28px', fontSize: 14, color: '#707070' }}>{FLATS.length} listings · all personally checked by our team</p>
 
           {/* Filter tabs */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: isMobile ? 'nowrap' : 'wrap', overflowX: isMobile ? 'auto' : 'visible', scrollbarWidth: 'none' }}>
             {FILTERS.map(f => (
               <button
                 key={f.key}
@@ -56,6 +58,8 @@ export default function HousingPage() {
                   background: active === f.key ? '#0a0a0a' : '#fff',
                   color:      active === f.key ? '#fff'    : '#555',
                   borderColor: active === f.key ? '#0a0a0a' : '#ddd',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >{f.label}</button>
             ))}
@@ -64,8 +68,8 @@ export default function HousingPage() {
       </div>
 
       {/* Grid */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 28px 80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 20 }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px 56px' : '0 28px 80px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: 20 }}>
           {filtered.map(flat => (
             <FlatCard key={flat.id} flat={flat} />
           ))}

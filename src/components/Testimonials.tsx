@@ -13,7 +13,7 @@ export default function Testimonials() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:24 }}>
           {TESTIMONIALS.map(t => (
             <div key={t.name} style={{ background:'#f7f7f7', border:'1.5px solid #e0e0e0', borderRadius:12, padding:32, display:'flex', flexDirection:'column', gap:16 }}>
-              <p style={{ fontSize:48, fontWeight:900, color:'#e0e0e0', lineHeight:1, fontFamily:'Georgia,serif' }}>"</p>
+              <p style={{ fontSize:48, fontWeight:900, color:'#e0e0e0', lineHeight:1, fontFamily:'Georgia,serif' }}>&ldquo;</p>
               <p style={{ fontSize:15, lineHeight:1.6, color:'#3a3a3a', fontStyle:'italic', flex:1 }}>{t.quote}</p>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                 <div style={{ width:36, height:36, borderRadius:'50%', background:'#0a0a0a', color:'#fff', fontSize:14, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{t.initial}</div>

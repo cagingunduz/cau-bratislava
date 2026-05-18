@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import type { Listing } from '@/types'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const CONDITION_LABEL: Record<string, string> = { like_new: 'Like new', good: 'Good', fair: 'Fair' }
 const CATEGORY_LABEL: Record<string, string>  = {
@@ -24,8 +25,10 @@ export default function ListingCard({
   onToggleFavorite, onMarkSold, onDelete,
 }: Props) {
   const [imgError, setImgError] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 420px)')
+  const [urgentCutoff] = useState(() => Date.now() + 7 * 86400000)
 
-  const isUrgent  = listing.is_urgent || (listing.leaving_date && new Date(listing.leaving_date) <= new Date(Date.now() + 7 * 86400000))
+  const isUrgent  = listing.is_urgent || (listing.leaving_date && new Date(listing.leaving_date).getTime() <= urgentCutoff)
   const isOwner   = currentUserId && listing.user_id && currentUserId === listing.user_id
 
   return (
@@ -124,15 +127,15 @@ export default function ListingCard({
           <p style={{ fontSize: 11, color: '#a0a0a0', margin: 0 }}>📍 {listing.pickup_address}</p>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #f0f0f0', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'flex-end', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #f0f0f0', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
           <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-.03em' }}>€{listing.price}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 0, maxWidth: '100%' }}>
             <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#0a0a0a', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {listing.seller_name[0]?.toUpperCase()}
             </div>
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600 }}>{listing.seller_name} {listing.seller_country}</p>
-              <p style={{ fontSize: 10, color: '#a0a0a0' }}>{listing.university}</p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, overflowWrap: 'anywhere' }}>{listing.seller_name} {listing.seller_country}</p>
+              <p style={{ fontSize: 10, color: '#a0a0a0', overflowWrap: 'anywhere' }}>{listing.university}</p>
             </div>
           </div>
         </div>
